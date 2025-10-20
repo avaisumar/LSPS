@@ -15,7 +15,7 @@ import { ShoppingCart, Home, CreditCard } from 'react-feather'
 
 // ** Store & Actions
 import { useDispatch, useSelector } from 'react-redux'
-import { getCartItems, deleteCartItem, deleteWishlistItem, addToWishlist } from '../store'
+// import { getCartItems, deleteCartItem, deleteWishlistItem, addToWishlist } from '../store'
 
 // ** Styles
 import '@styles/base/pages/app-ecommerce.scss'
@@ -31,7 +31,7 @@ const Checkout = () => {
 
   // ** Get Cart Items on mount
   useEffect(() => {
-    dispatch(getCartItems())
+    // dispatch(getCartItems())
   }, [])
 
   const steps = [
