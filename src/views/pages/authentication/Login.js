@@ -1,6 +1,8 @@
 // ** React Imports
 import { useContext, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import Logo from '@src/assets/images/pages/Logo.jpeg'; // ✅ correct import path
+import Logobg from '@src/assets/images/pages/Lsp-bg.jpeg'; // ✅ correct import path
 
 // ** Custom Hooks
 import { useSkin } from '@hooks/useSkin'
@@ -160,13 +162,13 @@ ability.update(userAbility)
       <Row className='auth-inner m-0'>
         <Link className='brand-logo' to='/' onClick={e => e.preventDefault()}>
               <div className=' d-lg-flex align-items-center justify-content-center pb-5'>
-            <img className='img-fluid' src='src\assets\images\pages\Logo.jpeg' alt='Login Cover' width='50'/>
+            <img className='img-fluid' src={Logo} alt='Login Cover' width='50'/>
           </div>
           <h2 className='brand-text text-primary ms-1'>Little Star Public School ERP</h2>
         </Link>
         <Col className='d-none d-lg-flex align-items-center p-5' lg='8' sm='12'>
           <div className='w-100 d-lg-flex align-items-center justify-content-center px-5'>
-            <img className='img-fluid' src='src\assets\images\pages\Lsp-bg.jpeg' alt='Login Cover' />
+            <img className='img-fluid' src={Logobg} alt='Login Cover' />
           </div>
         </Col>
         <Col className='d-flex align-items-center auth-bg px-2 p-lg-5' lg='4' sm='12'>

@@ -91,7 +91,7 @@ const SidebarNewUsers = ({ open, toggleSidebar, tabtype }) => {
     console.log("enter");
     if (open && tabtype !== "designation") {
       axios
-        .get("https://lspschoolerp.pythonanywhere.com/erp-api/designation", {
+        .get("https://lspschoolerp.pythonanywhere.com/erp-api/designation/", {
           headers: {
             Authorization: `Token ${token}`, // add token here
           },
