@@ -14,7 +14,7 @@ import { Card, CardBody, CardText, Button, Alert } from 'reactstrap'
 
 // ** Store & Actions
 import { useDispatch, useSelector } from 'react-redux'
-import { getWishlistItems, deleteWishlistItem, addToCart, getCartItems } from '../store'
+// import { getWishlistItems, deleteWishlistItem, addToCart, getCartItems } from '../store'
 
 // ** Styles
 import '@styles/base/pages/app-ecommerce.scss'
