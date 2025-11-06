@@ -75,6 +75,24 @@ const languageOptions = [
 const MySwal = withReactContent(Swal);
 
 const UserInfoCard = ({ selectedUser, onUserUpdated }) => {
+   const userdata = useSelector((state) => state.auth.userData);
+  const [users, setUsers] = useState([]);
+const flattenTeam = (team = []) => {
+  let flat = [];
+  for (const member of team) {
+    flat.push(member);
+    if (member.subordinates && member.subordinates.length > 0) {
+      flat = flat.concat(flattenTeam(member.subordinates));
+    }
+  }
+  return flat;
+};
+  useEffect(() => {
+    if (userdata?.team) {
+      const teamList = flattenTeam(userdata.team);
+      setUsers(teamList);
+    }
+  }, [userdata]);
   // ** State
   const [show, setShow] = useState(false);
   const { tabtype } = useParams();
@@ -84,7 +102,7 @@ const UserInfoCard = ({ selectedUser, onUserUpdated }) => {
   const navigate = useNavigate();
   const [role, setRole] = useState("");
   const [designations, setDesignations] = useState([]);
-  console.log("tokentoken",token)
+  console.log("tokentoken", token);
   useEffect(() => {
     console.log("enter");
     if (open && tabtype !== "designation") {
@@ -111,12 +129,21 @@ const UserInfoCard = ({ selectedUser, onUserUpdated }) => {
 
   const defaultValues =
     tabtype === "designation"
-      ? { name: selectedUser?.name || "" } // or whatever designation field you have
+      ? { name: selectedUser?.name || "" }
+      : tabtype === "task"
+      ? {
+          title: selectedUser?.title || "",
+          description: selectedUser?.description || "",
+          assigned_to: selectedUser?.assigned_to?.id || "",
+          status: selectedUser?.status || "pending",
+          priority: selectedUser?.priority || "medium",
+          due_date: selectedUser?.due_date || "", 
+        }
       : {
           firstName: selectedUser?.first_name || "",
           lastName: selectedUser?.last_name || "",
           email: selectedUser?.email || "",
-          designation: selectedUser?.designation.name,
+          designation: selectedUser?.designation?.id || "",
         };
   const {
     reset,
@@ -127,7 +154,7 @@ const UserInfoCard = ({ selectedUser, onUserUpdated }) => {
   } = useForm({
     defaultValues,
   });
-  
+
   // ** render user img
   const renderUserImg = () => {
     if (selectedUser !== null && selectedUser.avatar?.length) {
@@ -163,74 +190,92 @@ const UserInfoCard = ({ selectedUser, onUserUpdated }) => {
   };
 
   const onSubmit = async (data) => {
-    if (Object.values(data).every((field) => field.length > 0)) {
-      try {
-        const url =
-          tabtype === "designation"
-            ? `https://lspschoolerp.pythonanywhere.com/erp-api/designation/${
-                selectedUser?.id || ""
-              }/`
-            : `https://lspschoolerp.pythonanywhere.com/erp-api/user/${selectedUser.id}/`;
+    try {
+      const { id } = selectedUser || {};
+      const isEdit = Boolean(id);
 
-        const method = selectedUser?.id ? "PUT" : "POST"; // Add new designation if no id
-        console.log("QWEEE", data);
-        const body =
-          tabtype === "designation"
-            ? { name: data.name }
-            : {
-                first_name: data.firstName,
-                last_name: data.lastName,
-                email: data.email,
-                designation: Number(data.designation),
-              };
+      let url = "";
+      let body = {};
+      let method = isEdit ? "PUT" : "POST";
 
-        const response = await fetch(url, {
-          method,
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Token ${token}`,
-          },
-          body: JSON.stringify(body),
+      if (tabtype === "designation") {
+        url = `https://lspschoolerp.pythonanywhere.com/erp-api/designation/${
+          isEdit ? `${id}/` : ""
+        }`;
+        body = { name: data.name };
+      } else if (tabtype === "task") {
+        url = `https://lspschoolerp.pythonanywhere.com/erp-api/task/${
+          isEdit ? `${id}/` : ""
+        }`;
+        body = {
+          title: data.title,
+          description: data.description,
+          assigned_to: Number(data.assigned_to),
+          status: data.status,
+          priority: data.priority,
+          due_date: data.due_date,
+          assigned_by: data.id,
+        };
+      } else {
+        url = `https://lspschoolerp.pythonanywhere.com/erp-api/user/${
+          isEdit ? `${id}/` : ""
+        }`;
+        body = {
+          first_name: data.firstName,
+          last_name: data.lastName,
+          email: data.email,
+          designation: Number(data.designation),
+        };
+      }
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Token ${token}`,
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (response.ok) {
+        const updatedData = await response.json();
+        MySwal.fire({
+          icon: "success",
+          title: "Success!",
+          text: `${
+            tabtype.charAt(0).toUpperCase() + tabtype.slice(1)
+          } updated successfully.`,
         });
-
-        if (response.ok) {
-          const updatedData = await response.json();
-          MySwal.fire({
-            icon: "success",
-            title: "Updated!",
-            text: "Data updated successfully.",
-          });
-          if (onUserUpdated) onUserUpdated(updatedData);
-          setShow(false);
-        } else {
-          const errorData = await response.json();
-          MySwal.fire({
-            icon: "error",
-            title: "Update Failed",
-            text: errorData.detail || "Error",
-          });
-        }
-      } catch (error) {
-        console.error(error);
+        if (onUserUpdated) onUserUpdated(updatedData);
+        setShow(false);
+      } else {
+        const errorData = await response.json();
         MySwal.fire({
           icon: "error",
-          title: "Network Error",
-          text: "Something went wrong.",
+          title: "Failed",
+          text: errorData.detail || "Something went wrong.",
         });
       }
-    } else {
-      for (const key in data)
-        if (data[key].length === 0) setError(key, { type: "manual" });
+    } catch (error) {
+      console.error(error);
+      MySwal.fire({
+        icon: "error",
+        title: "Network Error",
+        text: "Please try again later.",
+      });
     }
   };
 
-  const handleDeleteDesignation = () => {
+  const handleDelete = () => {
+    const entity = tabtype; // 'designation' | 'user' | 'task'
+    const entityName = entity.charAt(0).toUpperCase() + entity.slice(1); // For popup titles
+
     MySwal.fire({
-      title: "Are you sure?",
-      text: "You won't be able to revert this!",
+      title: `Delete ${entityName}?`,
+      text: `Are you sure you want to delete this ${entityName.toLowerCase()}?`,
       icon: "warning",
       showCancelButton: true,
-      confirmButtonText: "Yes, delete it!",
+      confirmButtonText: `Yes, delete it!`,
       customClass: {
         confirmButton: "btn btn-danger",
         cancelButton: "btn btn-outline-secondary ms-1",
@@ -240,7 +285,7 @@ const UserInfoCard = ({ selectedUser, onUserUpdated }) => {
       if (result.isConfirmed) {
         try {
           const response = await fetch(
-            `https://lspschoolerp.pythonanywhere.com/erp-api/designation/${selectedUser.id}/`,
+            `https://lspschoolerp.pythonanywhere.com/erp-api/${entity}/${selectedUser.id}/`,
             {
               method: "DELETE",
               headers: {
@@ -252,19 +297,21 @@ const UserInfoCard = ({ selectedUser, onUserUpdated }) => {
           if (response.ok) {
             MySwal.fire({
               icon: "success",
-              title: "Deleted!",
-              text: "Designation has been deleted.",
+              title: `${entityName} Deleted!`,
+              text: `${entityName} has been successfully deleted.`,
               customClass: { confirmButton: "btn btn-success" },
             }).then(() => {
-              // Navigate back to view/list page
-              navigate("/apps/designation/list"); // <-- replace with your actual route
+              // ✅ Navigate back to correct list view after deletion
+              navigate(`/apps/${entity}/list`);
             });
           } else {
             const errorData = await response.json();
             MySwal.fire({
               icon: "error",
               title: "Delete Failed",
-              text: errorData.detail || "Error deleting designation",
+              text:
+                errorData.detail ||
+                `Error deleting ${entityName.toLowerCase()}`,
             });
           }
         } catch (error) {
@@ -272,7 +319,7 @@ const UserInfoCard = ({ selectedUser, onUserUpdated }) => {
           MySwal.fire({
             icon: "error",
             title: "Network Error",
-            text: "Something went wrong.",
+            text: "Something went wrong. Please try again later.",
           });
         }
       }
@@ -372,13 +419,14 @@ const UserInfoCard = ({ selectedUser, onUserUpdated }) => {
           <div className="info-container">
             {selectedUser !== null ? (
               <ul className="list-unstyled">
-                {tabtype === "designation" ? (
+                {tabtype === "designation" && (
                   // Show designation details
                   <li className="mb-75">
                     <span className="fw-bolder me-25">Designation Name :</span>
                     <span>{selectedUser.name}</span>
                   </li>
-                ) : (
+                )}{" "}
+                {tabtype === "user" && (
                   <>
                     <li className="mb-75">
                       <span className="fw-bolder me-25">First Name :</span>
@@ -396,8 +444,51 @@ const UserInfoCard = ({ selectedUser, onUserUpdated }) => {
                     <li className="mb-75">
                       <span className="fw-bolder me-25">Designation:</span>
                       <span className="text-capitalize">
-                        {selectedUser.designation.name}
+                        {selectedUser?.designation?.name}
                       </span>
+                    </li>
+                  </>
+                )}
+                {tabtype === "task" && (
+                  <>
+                    <li>
+                      <span className="fw-bolder me-25">Title:</span>
+                      {selectedUser?.title}
+                    </li>
+                    <li>
+                      <span className="fw-bolder me-25">Description:</span>
+                      <span
+                        style={{
+                          display: "inline-block", // ✅ required for ellipsis
+                          maxWidth: "320px", // ✅ adjust as needed
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          verticalAlign: "bottom",
+                          cursor: "pointer",
+                        }}
+                        title={selectedUser?.description} // ✅ shows full text on hover
+                      >
+                        {selectedUser?.description}
+                      </span>
+                    </li>
+
+                    <li>
+                      <span className="fw-bolder me-25">Status:</span>
+                      {selectedUser?.status}
+                    </li>
+                    <li>
+                      <span className="fw-bolder me-25">Priority:</span>
+                      {selectedUser?.priority}
+                    </li>
+                    <li>
+                      <span className="fw-bolder me-25">Due Date:</span>
+                      {selectedUser?.due_date}
+                    </li>
+
+                    <li>
+                      <span className="fw-bolder me-25">Assign To:</span>
+                      {selectedUser?.assigned_to.name}
                     </li>
                   </>
                 )}
@@ -412,12 +503,12 @@ const UserInfoCard = ({ selectedUser, onUserUpdated }) => {
             <Button color="primary" onClick={() => setShow(true)}>
               Edit
             </Button>
-            {tabtype === "designation" && (
+            {(tabtype === "designation" || tabtype === "task") && (
               <Button
                 className="ms-1"
                 color="danger"
                 outline
-                onClick={handleDeleteDesignation}
+                onClick={handleDelete}
               >
                 Delete
               </Button>
@@ -441,7 +532,7 @@ const UserInfoCard = ({ selectedUser, onUserUpdated }) => {
           </div>
           <Form onSubmit={handleSubmit(onSubmit)}>
             <Row className="gy-1 pt-75">
-              {tabtype === "designation" ? (
+              {tabtype === "designation" && (
                 <Col md={12}>
                   <Label className="form-label" for="name">
                     Designation Name
@@ -459,7 +550,8 @@ const UserInfoCard = ({ selectedUser, onUserUpdated }) => {
                     )}
                   />
                 </Col>
-              ) : (
+              )}{" "}
+              {tabtype === "user" && (
                 <>
                   <Col md={6} xs={12}>
                     <Label className="form-label" for="firstName">
@@ -621,6 +713,118 @@ const UserInfoCard = ({ selectedUser, onUserUpdated }) => {
                   </Label>
                 </div>
               </Col> */}
+                </>
+              )}
+              {tabtype === "task" && (
+                <>
+                  <Col md={6}>
+                    <Label for="title">Task Title</Label>
+                    <Controller
+                      name="title"
+                      control={control}
+                      render={({ field }) => (
+                        <Input
+                          {...field}
+                          placeholder="Enter title"
+                          invalid={errors.title && true}
+                        />
+                      )}
+                    />
+                  </Col>
+                  {/* <Col md={6}>
+                    <Label for="assigned_to">Assign To</Label>
+                    <Controller name="assigned_to" control={control}
+                      render={({ field }) => (
+                        <Input type="select" {...field}>
+                          <option value="">Select User</option>
+                          {users.map((u) => (
+                            <option key={u.id} value={u.id}>{u.email}</option>
+                          ))}
+                        </Input>
+                      )}
+                    />
+                  </Col> */}
+                  <Col md={12}>
+                    <Label for="description">Description</Label>
+                    <Controller
+                      name="description"
+                      control={control}
+                      render={({ field }) => (
+                        <Input
+                          {...field}
+                          style={{
+                            maxHeight: "100px",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                            cursor: "pointer",
+                          }}
+                          title={field.value}
+                          type="textarea"
+                          placeholder="Task description"
+                        />
+                      )}
+                    />
+                  </Col>
+                  <Col md={6}>
+                    <Label for="status">Status</Label>
+                    <Controller
+                      name="status"
+                      control={control}
+                      render={({ field }) => (
+                        <Input type="select" {...field}>
+                          <option value="pending">Pending</option>
+                          <option value="in_progress">In Progress</option>
+                          <option value="completed">Completed</option>
+                        </Input>
+                      )}
+                    />
+                  </Col>
+                  <Col md={6}>
+                    <Label for="assigned_to">Assign To</Label>
+                    <Controller
+                      name="assigned_to"
+                      control={control}
+                      render={({ field }) => (
+                        <Input type="select" {...field}>
+                          <option value="">Select User</option>
+                          {users.map((u) => (
+                            <option key={u.id} value={u.id}>
+                              {u.email || u.name}
+                            </option>
+                          ))}
+                        </Input>
+                      )}
+                    />
+                  </Col>
+
+                  {/* Priority */}
+                  <Col md={4}>
+                    <Label for="priority">Priority</Label>
+                    <Controller
+                      name="priority"
+                      control={control}
+                      render={({ field }) => (
+                        <Input type="select" {...field}>
+                          <option value="">Select Priority</option>
+                          <option value="urgent">Urgent</option>
+                          <option value="high">High</option>
+                          <option value="medium">Medium</option>
+                          <option value="low">Low</option>
+                        </Input>
+                      )}
+                    />
+                  </Col>
+
+                  {/* Due Date */}
+                  <Col md={4}>
+                    <Label for="due_date">Due Date</Label>
+                    <Controller
+                      name="due_date"
+                      control={control}
+                      render={({ field }) => <Input type="date" {...field} />}
+                    />
+                  </Col>
                 </>
               )}
               <Col xs={12} className="text-center mt-2 pt-50">

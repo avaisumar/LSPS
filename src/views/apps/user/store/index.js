@@ -7,19 +7,28 @@ import axios from 'axios'
 export const getAllData = createAsyncThunk(
   'appUsers/getAllData',
   async (params = {}, { getState }) => {
-    const token = getState().auth?.accessToken
-    console.log('🔑 Token being sent:', getState().auth)
-    const endpoint = params.endpoint || 'user/' // default to user if not provided
+    const token = getState().auth?.accessToken;
+    const endpoint = params.endpoint || 'user/';
+    const queryParams = params.queryParams || {};
 
-    const response = await axios.get(`https://lspschoolerp.pythonanywhere.com/erp-api/${endpoint}`, {
+    // Build URL with query parameters (if any)
+    const queryString = new URLSearchParams(queryParams).toString();
+    const url = `https://lspschoolerp.pythonanywhere.com/erp-api/${endpoint}${
+      queryString ? `?${queryString}` : ''
+    }`;
+
+    console.log('🔗 Fetching:', url);
+
+    const response = await axios.get(url, {
       headers: {
-        Authorization: token ? `Token ${token}` : undefined
-      }
-    })
+        Authorization: token ? `Token ${token}` : undefined,
+      },
+    });
 
-    return response.data // returns array (users or designations)
+    return response.data;
   }
-)
+);
+
 
 
 export const getData = createAsyncThunk('appUsers/getData', async params => {

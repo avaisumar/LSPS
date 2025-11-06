@@ -1,5 +1,5 @@
 // ** Icons Import
-import { Mail, MessageSquare, CheckSquare, Calendar, FileText, Circle, ShoppingCart, User, Shield } from 'react-feather'
+import { Mail, MessageSquare, CheckSquare, Calendar,File, FileText, Circle, ShoppingCart, User, Shield, PenTool } from 'react-feather'
 
 export default [
   {
@@ -136,6 +136,18 @@ export default [
     title: 'Designation',
     icon: <Mail size={20} />,
     navLink: '/apps/designation/list'
+  },
+  {
+    id: 'task',
+    title: 'Task',
+    icon: <PenTool size={20} />,
+    navLink: '/apps/task/list'
+  },
+  {
+    id: 'report',
+    title: 'Report',
+    icon: <File size={20} />,
+    navLink: '/apps/report/list'
   },
   
 ]

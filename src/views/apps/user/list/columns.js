@@ -207,7 +207,7 @@ const designationColumns = [
       sortable: false,
       maxWidth: '500px',
       cell: (row, index, column, id) => index + 1 // This works for local data
-    },,
+    },
   {
     name: 'Designation Name',
     sortable: true,
@@ -230,6 +230,77 @@ const designationColumns = [
     )
   }
 ]
+
+const taskColumns = [
+  {
+      name: 'S.No',
+      sortable: false,
+      maxWidth: '500px',
+      cell: (row, index, column, id) => index + 1 // This works for local data
+    },,
+  {
+    name: 'Task Title',
+    sortable: true,
+    minWidth: '200px',
+    selector: row => row.name,
+    cell: row => (
+      <div className='d-flex justify-content-left align-items-center'>
+        {renderClient(row)}
+        <div className='d-flex flex-column'>
+          <Link
+            to={`/apps/task/view/${row.id}`}
+            className='user_name text-truncate text-body'
+            onClick={() => store.dispatch(getUser(row.id))}
+          >
+            <span className='fw-bolder'>{row.title}</span>
+          </Link>
+          <small className='text-truncate text-muted mb-0'>{row.title}</small>
+        </div>
+      </div>
+    )
+  },
+  {
+    name: 'Description',
+    minWidth: '230px',
+    sortable: true,
+    sortField: 'billing',
+    selector: row => row.description,
+    cell: row => <span className='text-capitalize' style={{
+        maxWidth: '450px',       // Adjust width as needed
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+        cursor: 'pointer'
+      }}
+      title={row.description} >{row.description}</span>
+  },
+  {
+    name: 'Priority',
+    minWidth: '230px',
+    sortable: true,
+    sortField: 'billing',
+    selector: row => row.priority,
+    cell: row => <span className='text-capitalize'>{row.priority}</span>
+  },
+  {
+    name: 'Due Date',
+    minWidth: '230px',
+    sortable: true,
+    sortField: 'billing',
+    selector: row => row.due_date,
+    cell: row => <span className='text-capitalize'>{row.due_date}</span>
+  },
+  {
+    name: 'Status',
+    minWidth: '230px',
+    sortable: true,
+    sortField: 'billing',
+    selector: row => row.status,
+    cell: row => <span className='text-capitalize'>{row.status}</span>
+  },
+]
 export const getColumns = tabtype => {
-  return tabtype === 'designation' ? designationColumns : Usercolumns
+  if (tabtype === 'designation') return designationColumns
+  if (tabtype === 'task'||tabtype === 'report') return taskColumns
+  return Usercolumns
 }

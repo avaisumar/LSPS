@@ -62,7 +62,7 @@ const UserView = () => {
           <UserInfoCard selectedUser={selectedUser} onUserUpdated={handleUserUpdated} />
           {/* <PlanCard /> */}
         </Col>
-        {tabtype !== "designation" && (
+        {tabtype == "user" && (
           
           <Col xl='8' lg='7' xs={{ order: 0 }} md={{ order: 1, size: 7 }}>
           <UserTabs active={active} toggleTab={toggleTab} />

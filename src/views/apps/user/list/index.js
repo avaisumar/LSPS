@@ -19,13 +19,13 @@ const UsersList = () => {
   
   return (
     <div className='app-user-list'>
-      <Row>
+      {/* <Row>
         <Col lg='3' sm='6'>
           <StatsHorizontal
             color='primary'
             statTitle='Total Users'
             icon={<User size={20} />}
-            renderStats={<h3 className='fw-bolder mb-75'>21,45</h3>}
+            renderStats={<h3 className='fw-bolder mb-75'>21,4</h3>}
           />
         </Col>
         <Col lg='3' sm='6'>
@@ -52,7 +52,7 @@ const UsersList = () => {
             renderStats={<h3 className='fw-bolder mb-75'>237</h3>}
           />
         </Col>
-      </Row>
+      </Row> */}
       <Table />
     </div>
   )

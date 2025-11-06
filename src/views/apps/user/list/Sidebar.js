@@ -86,6 +86,11 @@ const SidebarNewUsers = ({ open, toggleSidebar, tabtype }) => {
   const dispatch = useDispatch();
   const token = useSelector((state) => state.auth.accessToken); // get token from Redux
   console.log("state.auth", token);
+  const userdata = useSelector((state) => state.auth.userData);
+  const teamList = userdata?.team || [];
+  const [teamMembers, setTeamMembers] = useState([]);
+  console.log("teamList", teamList);
+  
 
   useEffect(() => {
     console.log("enter");
@@ -124,60 +129,88 @@ const SidebarNewUsers = ({ open, toggleSidebar, tabtype }) => {
         : defaultValues,
   });
 
+  // Recursively flatten nested team/subordinates structure
+  const flattenTeam = (teamArray) => {
+    let flat = [];
+    teamArray.forEach((member) => {
+      flat.push(member);
+      if (member.subordinates && member.subordinates.length > 0) {
+        flat = flat.concat(flattenTeam(member.subordinates));
+      }
+    });
+    return flat;
+  };
+  useEffect(() => {
+  const flatTeam = flattenTeam(teamList || []);
+  setTeamMembers(flatTeam);
+}, [teamList]);
+
   // ** Function to handle form submit
   const onSubmit = async (data) => {
-    setData(data);
-    console.log("da", data);
-    if (tabtype === "designation") {
-      if (data.name.length > 0) {
-        try {
+    try {
+      if (tabtype === "designation") {
+        if (data.name?.length > 0) {
           const res = await axios.post(
             "https://lspschoolerp.pythonanywhere.com/erp-api/designation/",
             { name: data.name },
-            {
-              headers: { Authorization: `Token ${token}` },
-            }
+            { headers: { Authorization: `Token ${token}` } }
           );
           console.log("Designation created:", res.data);
           setToastMessage("Designation created successfully!");
           setToastOpen(true);
           dispatch(getAllData({ endpoint: "designation/" }));
           toggleSidebar();
-        } catch (err) {
-          console.error("Error creating designation:", err.response || err);
-        }
-      } else {
-        setError("name", { type: "manual" });
+        } else setError("name", { type: "manual" });
       }
-    } else {
-      try {
+
+      // ✅ USER CREATION
+      else if (tabtype === "user") {
         const payload = {
           email: data.email,
           password: data.password,
           firstname: data.firstname,
           lastname: data.lastname,
-          designation: role, // use selected designation ID
+          designation: role,
         };
 
         const res = await axios.post(
           "https://lspschoolerp.pythonanywhere.com/erp-api/user/createuser/",
           payload,
-          {
-            headers: { Authorization: `Token ${token}` },
-          }
+          { headers: { Authorization: `Token ${token}` } }
         );
 
         console.log("User created:", res.data);
-        setSuccessMessage("User created successfully!");
-        // After user creation
         setToastMessage("User created successfully!");
-        dispatch(getAllData({ endpoint: "user/" }));
         setToastOpen(true);
-
+        dispatch(getAllData({ endpoint: "user/" }));
         toggleSidebar();
-      } catch (err) {
-        console.error("Error creating user:", err.response || err);
       }
+
+      // ✅ TASK CREATION
+      else if (tabtype === "task") {
+        const payload = {
+          title: data.title,
+          description: data.description,
+          status: data.status,
+          priority: data.priority,
+    due_date: data.due_date,
+    assigned_to: data.assigned_to
+        };
+
+        const res = await axios.post(
+          "https://lspschoolerp.pythonanywhere.com/erp-api/task/",
+          payload,
+          { headers: { Authorization: `Token ${token}` } }
+        );
+
+        console.log("Task created:", res.data);
+        setToastMessage("Task created successfully!");
+        setToastOpen(true);
+        dispatch(getAllData({ endpoint: "task/" }));
+        toggleSidebar();
+      }
+    } catch (err) {
+      console.error("Error creating record:", err.response || err);
     }
   };
 
@@ -201,7 +234,7 @@ const SidebarNewUsers = ({ open, toggleSidebar, tabtype }) => {
         onClosed={handleSidebarClosed}
       >
         <Form onSubmit={handleSubmit(onSubmit)}>
-          {tabtype === "designation" ? (
+          {tabtype === "designation" && (
             <div className="mb-1">
               <Label className="form-label" for="designationName">
                 Designation Name <span className="text-danger">*</span>
@@ -219,7 +252,130 @@ const SidebarNewUsers = ({ open, toggleSidebar, tabtype }) => {
                 )}
               />
             </div>
-          ) : (
+          )}
+          {tabtype === "task" && (
+            <>
+              <div className="mb-1">
+                <Label className="form-label" for="taskTitle">
+                  Task Title <span className="text-danger">*</span>
+                </Label>
+                <Controller
+                  name="title"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      id="taskTitle"
+                      placeholder="Enter task title"
+                      invalid={errors.title && true}
+                      {...field}
+                    />
+                  )}
+                />
+              </div>
+
+              <div className="mb-1">
+                <Label className="form-label" for="taskDescription">
+                  Description <span className="text-danger">*</span>
+                </Label>
+                <Controller
+                  name="description"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      id="taskDescription"
+                      type="textarea"
+                      placeholder="Enter description"
+                      invalid={errors.description && true}
+                      {...field}
+                    />
+                  )}
+                />
+              </div>
+              {/* Priority Dropdown */}
+              <div className="mb-1">
+                <Label className="form-label" for="priority">
+                  Priority <span className="text-danger">*</span>
+                </Label>
+                <Controller
+                  name="priority"
+                  control={control}
+                  defaultValue="medium"
+                  render={({ field }) => (
+                    <Input type="select" id="priority" {...field}>
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                      <option value="urgent">Urgent</option>
+                    </Input>
+                  )}
+                />
+              </div>
+
+              {/* Due Date */}
+              <div className="mb-1">
+                <Label className="form-label" for="due_date">
+                  Due Date <span className="text-danger">*</span>
+                </Label>
+                <Controller
+                  name="due_date"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      type="date"
+                      id="due_date"
+                      invalid={errors.due_date && true}
+                      {...field}
+                    />
+                  )}
+                />
+              </div>
+
+              {/* Assigned To Dropdown */}
+              <div className="mb-1">
+                <Label className="form-label" for="assigned_to">
+                  Assigned To <span className="text-danger">*</span>
+                </Label>
+                <Controller
+                  name="assigned_to"
+                  control={control}
+                  render={({ field }) => (
+                    <Input type="select" id="assigned_to" {...field}>
+                      <option value="">Select Team Member</option>
+                      {teamMembers.map((member) => (
+                        <option key={member.id} value={member.id}>
+                          {member.first_name} 
+                        </option>
+                      ))}
+                    </Input>
+                  )}
+                />
+              </div>
+
+              {/* <div className="mb-1">
+                <Label className="form-label" for="taskStatus">
+                  Status <span className="text-danger">*</span>
+                </Label>
+                <Controller
+                  name="status"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      type="select"
+                      id="taskStatus"
+                      {...field}
+                      invalid={errors.status && true}
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="in_progress">In Progress</option>
+                      <option value="completed">Completed</option>
+                    </Input>
+                  )}
+                />
+              </div> */}
+            </>
+          )}
+
+          {tabtype === "user" && (
             <>
               <div className="mb-1">
                 <Label className="form-label" for="fullName">
