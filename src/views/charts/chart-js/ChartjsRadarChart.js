@@ -1,36 +1,36 @@
 // ** React Imports
 import { useRef, useState, useEffect } from 'react'
 
-// ** Third Party Components
+// ** Chart.js Imports
+import {
+  Chart as ChartJS,
+  RadialLinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  Tooltip,
+  Legend
+} from 'chart.js'
 import { Radar } from 'react-chartjs-2'
+
+// ✅ Register the components
+ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend)
 
 // ** Reactstrap Imports
 import { Card, CardHeader, CardTitle, CardBody } from 'reactstrap'
 
 const ChartjsRadarChart = ({ gridLineColor, labelColor }) => {
-  // ** States
-  const [chartData, setChartData] = useState({
-    datasets: []
-  })
-
-  // ** Hooks
+  const [chartData, setChartData] = useState({ datasets: [] })
   const chartRef = useRef(null)
 
-  // ** Chart Options
   const options = {
     responsive: true,
     maintainAspectRatio: false,
     animation: { duration: 500 },
-    layout: {
-      padding: { top: -20 }
-    },
+    layout: { padding: { top: -20 } },
     scales: {
       r: {
-        ticks: {
-          display: false,
-          maxTicksLimit: 1,
-          color: labelColor
-        },
+        ticks: { display: false, color: labelColor },
         grid: { color: gridLineColor },
         pointLabels: { color: labelColor },
         angleLines: { color: gridLineColor }
@@ -39,60 +39,54 @@ const ChartjsRadarChart = ({ gridLineColor, labelColor }) => {
     plugins: {
       legend: {
         position: 'top',
-        labels: {
-          padding: 25,
-          color: labelColor
-        }
+        labels: { color: labelColor, padding: 25 }
       }
     }
   }
 
   useEffect(() => {
-    if (!chartRef.current) {
-    } else {
-      // For radar gradient color
-      const gradientBlue = chartRef.current.ctx.createLinearGradient(0, 0, 0, 150)
-      gradientBlue.addColorStop(0, 'rgba(155,136,250, 0.9)')
-      gradientBlue.addColorStop(1, 'rgba(155,136,250, 0.8)')
+    if (!chartRef.current) return
+    const ctx = chartRef.current.ctx
 
-      const gradientRed = chartRef.current.ctx.createLinearGradient(0, 0, 0, 150)
-      gradientRed.addColorStop(0, 'rgba(255,161,161, 0.9)')
-      gradientRed.addColorStop(1, 'rgba(255,161,161, 0.8)')
+    const gradientBlue = ctx.createLinearGradient(0, 0, 0, 150)
+    gradientBlue.addColorStop(0, 'rgba(155,136,250, 0.9)')
+    gradientBlue.addColorStop(1, 'rgba(155,136,250, 0.8)')
 
-      const chartData = {
-        labels: ['STA', 'STR', 'AGI', 'VIT', 'CHA', 'INT'],
-        datasets: [
-          {
-            fill: true,
-            label: 'Donté Panlin',
-            borderColor: 'transparent',
-            backgroundColor: gradientRed,
-            data: [25, 59, 90, 81, 60, 82],
-            pointBorderColor: 'transparent',
-            pointBackgroundColor: 'transparent'
-          },
-          {
-            fill: true,
-            label: 'Mireska Sunbreeze',
-            borderColor: 'transparent',
-            backgroundColor: gradientBlue,
-            data: [40, 100, 40, 90, 40, 90],
-            pointBorderColor: 'transparent',
-            pointBackgroundColor: 'transparent'
-          }
-        ]
-      }
+    const gradientRed = ctx.createLinearGradient(0, 0, 0, 150)
+    gradientRed.addColorStop(0, 'rgba(255,161,161, 0.9)')
+    gradientRed.addColorStop(1, 'rgba(255,161,161, 0.8)')
 
-      setChartData(chartData)
-    }
+    setChartData({
+      labels: ['STA', 'STR', 'AGI', 'VIT', 'CHA', 'INT'],
+      datasets: [
+        {
+          label: 'Donté Panlin',
+          data: [25, 59, 90, 81, 60, 82],
+          backgroundColor: gradientRed,
+          borderColor: 'transparent',
+          fill: true
+        },
+        {
+          label: 'Mireska Sunbreeze',
+          data: [40, 100, 40, 90, 40, 90],
+          backgroundColor: gradientBlue,
+          borderColor: 'transparent',
+          fill: true
+        }
+      ]
+    })
   }, [])
 
-  //** To add spacing between legends and chart
   const plugins = [
     {
-      beforeInit(chart) {
-        chart.legend.afterFit = function () {
-          this.height += 20
+      id: 'legendSpacing',
+      afterInit(chart) {
+        if (chart.legend) {
+          const originalFit = chart.legend.fit
+          chart.legend.fit = function fit() {
+            originalFit.bind(chart.legend)()
+            this.height += 20
+          }
         }
       }
     }
@@ -100,7 +94,7 @@ const ChartjsRadarChart = ({ gridLineColor, labelColor }) => {
 
   return (
     <Card>
-      <CardHeader className='d-flex justify-content-between align-items-sm-center align-items-start flex-sm-row flex-column'>
+      <CardHeader>
         <CardTitle tag='h4'>Radar Chart</CardTitle>
       </CardHeader>
       <CardBody>

@@ -1,5 +1,5 @@
 // ** Icons Import
-import { Mail, MessageSquare, CheckSquare, Calendar,File, FileText, Circle, ShoppingCart, User, Shield, PenTool } from 'react-feather'
+import { Mail, MessageSquare, CheckSquare, Calendar,File, FileText, Circle, ShoppingCart, User, Shield, PenTool, Home } from 'react-feather'
 
 export default [
   {
@@ -111,6 +111,12 @@ export default [
         navLink: '/apps/ecommerce/checkout'
       }
     ]
+  },
+  {
+    id: 'dashboard',
+    title: 'Dashboard',
+    icon: <Home size={20} />,
+    navLink: '/dashboard/ecommerce'
   },
   {
     id: 'users',

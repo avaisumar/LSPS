@@ -19,20 +19,80 @@ import OrdersBarChart from '@src/views/ui-elements/cards/statistics/OrdersBarCha
 import CardTransactions from '@src/views/ui-elements/cards/advance/CardTransactions'
 import ProfitLineChart from '@src/views/ui-elements/cards/statistics/ProfitLineChart'
 import CardBrowserStates from '@src/views/ui-elements/cards/advance/CardBrowserState'
+import StatsHorizontal from '@components/widgets/stats/StatsHorizontal'
+
 
 // ** Styles
 import '@styles/react/libs/charts/apex-charts.scss'
 import '@styles/base/pages/dashboard-ecommerce.scss'
+import { User, UserCheck, UserPlus, UserX } from 'react-feather'
+import { useSkin } from '@hooks/useSkin'
+import ChartjsDoughnutChart from '../../charts/chart-js/ChartjsDoughnutChart'
+
+
 
 const EcommerceDashboard = () => {
   // ** Context
-  const { colors } = useContext(ThemeColors)
+  
+  
 
   // ** vars
   const trackBgColor = '#e9ecef'
+  const { colors } = useContext(ThemeColors),
+    { skin } = useSkin(),
+    labelColor = skin === 'dark' ? '#b4b7bd' : '#6e6b7b',
+    gridLineColor = 'rgba(200, 200, 200, 0.2)'
 
   return (
     <div id='dashboard-ecommerce'>
+      <Row>
+        <Col lg='3' sm='6'>
+          <StatsHorizontal
+            color='primary'
+            statTitle='Total Tasks'
+            icon={<User size={20} />}
+            renderStats={<h3 className='fw-bolder mb-75'>21,4</h3>}
+          />
+        </Col>
+        <Col lg='3' sm='6'>
+          <StatsHorizontal
+            color='danger'
+            statTitle='Pending Tasks'
+            icon={<UserPlus size={20} />}
+            renderStats={<h3 className='fw-bolder mb-75'>4,567</h3>}
+          />
+        </Col>
+        <Col lg='3' sm='6'>
+          <StatsHorizontal
+            color='success'
+            statTitle='Team Tasks'
+            icon={<UserCheck size={20} />}
+            renderStats={<h3 className='fw-bolder mb-75'>19,860</h3>}
+          />
+        </Col>
+        <Col lg='3' sm='6'>
+          <StatsHorizontal
+            color='warning'
+            statTitle='Completed Tasks'
+            icon={<UserX size={20} />}
+            renderStats={<h3 className='fw-bolder mb-75'>237</h3>}
+          />
+        </Col>
+      </Row>
+      <Row className='match-height mt-2'>
+  <Col lg='4' md='6' xs='12'>
+    <ChartjsDoughnutChart
+      tooltipShadow='rgba(0, 0, 0, 0.25)'
+      successColorShade={colors.success.main}
+      warningLightColor={colors.warning.light}
+      primary={colors.primary.main}
+    />
+  </Col>
+</Row>
+
+      
+
+      
       {/* <Row className='match-height'>
         <Col xl='4' md='6' xs='12'>
           <CardMedal />
