@@ -9,15 +9,29 @@ import Layout from '@layouts/VerticalLayout'
 import navigation from '@src/navigation/vertical'
 
 const VerticalLayout = props => {
-  // const [menuData, setMenuData] = useState([])
+  // Assuming you store user info in localStorage
+  const userData = JSON.parse(localStorage.getItem('userData')) || {}
 
-  // ** For ServerSide navigation
-  // useEffect(() => {
-  //   axios.get(URL).then(response => setMenuData(response.data))
-  // }, [])
-  console.log("first",navigation)
+  // Filter the navigation menu based on conditions
+  const filteredNavigation = navigation.filter(item => {
+    // Show "Report" only if userData.is_report === true
+    if (item.id === 'report' && !userData.is_report) {
+      return false
+    }
+
+    // Show "Task" only if userData.is_task_create or is_task_recive is true
+    if (item.id === 'task' && !(userData.is_task_create || userData.is_task_recive)) {
+      return false
+    }
+
+    // Otherwise, keep everything else
+    return true
+  })
+
+  console.log('Filtered Navigation:', filteredNavigation)
+
   return (
-    <Layout menuData={navigation} {...props}>
+    <Layout menuData={filteredNavigation} {...props}>
       <Outlet />
     </Layout>
   )

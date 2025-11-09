@@ -1,120 +1,89 @@
 // ** Third Party Components
 import { Doughnut } from "react-chartjs-2";
-import { Monitor, Tablet, ArrowDown, ArrowUp } from "react-feather";
+import { Monitor, Clock, Tablet, CheckCircle } from "react-feather";
 
 // ** Reactstrap Imports
 import { Card, CardHeader, CardTitle, CardBody } from "reactstrap";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 
-// Register required components
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-const ChartjsRadarChart = ({
+const ChartjsDoughnutChart = ({
   tooltipShadow,
   successColorShade,
   warningLightColor,
   primary,
+  taskData,
 }) => {
-  // ** Chart Options
-  const options = {
-    maintainAspectRatio: false,
-    cutout: 60,
-    animation: {
-      resize: {
-        duration: 500,
-      },
-    },
-    plugins: {
-      legend: { display: false },
-      tooltips: {
-        callbacks: {
-          label(context) {
-            console.log(context);
-            let label = context.label || "";
-            if (label) {
-              label += "Ronak: ";
-            }
-            if (context.parsed.y !== null) {
-              label += new Intl.NumberFormat("en-US", {
-                style: "currency",
-                currency: "USD",
-              }).format(context.parsed.y);
-            }
-            return label;
-          },
-        },
-        // Updated default tooltip UI
-        shadowOffsetX: 1,
-        shadowOffsetY: 1,
-        shadowBlur: 8,
-        shadowColor: tooltipShadow,
-        backgroundColor: "#fff",
-        titleFontColor: "#000",
-        bodyFontColor: "#000",
-      },
-    },
-  };
+  const { total = 0, pending = 0, in_progress = 0, completed = 0 } = taskData || {};
 
-  // ** Chart data
   const data = {
+    labels: ["Pending", "In Progress", "Completed"],
     datasets: [
       {
-        labels: ["Tablet", "Mobile", "Desktop"],
-        data: [10, 10, 80],
-        backgroundColor: [successColorShade, warningLightColor, primary],
+        data: [pending, in_progress, completed],
+        backgroundColor: [warningLightColor, primary, successColorShade],
         borderWidth: 0,
-        pointStyle: "rectRounded",
       },
     ],
   };
 
+  const options = {
+    maintainAspectRatio: false,
+    cutout: "65%",
+    plugins: {
+      legend: { display: true, position: "bottom" },
+    },
+  };
+
+  const totalTasks = pending + in_progress + completed; // ✅ dynamic total
+
   return (
     <Card>
-      <CardHeader className="d-flex justify-content-between align-items-sm-center align-items-start flex-sm-row flex-column">
-        <CardTitle tag="h4">Task Status</CardTitle>
+      <CardHeader>
+        <CardTitle tag="h4">Task Status Overview</CardTitle>
       </CardHeader>
+
       <CardBody>
         <div style={{ height: "275px" }}>
           <Doughnut data={data} options={options} height={275} />
         </div>
-        <div className="d-flex justify-content-between mt-3 mb-1">
-          <div className="d-flex align-items-center">
-            <Monitor size={17} className="text-primary" />
-            <span className="fw-bold ms-75 me-25">Total Tasks</span>
-            <span>- 80%</span>
+
+        <div className="mt-2">
+          {/* ✅ Total */}
+          <div className="d-flex justify-content-between align-items-center mb-1">
+            <div className="d-flex align-items-center">
+              <Monitor size={17} className="text-primary" />
+              <span className="fw-bold ms-75 me-25">Total Tasks</span>
+            </div>
+            <span className="fw-bold">{total || totalTasks}</span>
           </div>
-          <div>
-            <span>2%</span> <ArrowUp className="text-success" size={14} />
+
+          {/* ✅ Pending */}
+          <div className="d-flex justify-content-between align-items-center mb-1">
+            <div className="d-flex align-items-center">
+              <Tablet size={17} className="text-warning" />
+              <span className="fw-bold ms-75 me-25">Pending</span>
+            </div>
+            <span>{pending}</span>
           </div>
-        </div>
-        <div className="d-flex justify-content-between mb-1">
-          <div className="d-flex align-items-center">
-            <Tablet size={17} className="text-warning" />
-            <span className="fw-bold ms-75 me-25">Pending Tasks</span>
-            <span>- 10%</span>
+
+          {/* ✅ In Progress */}
+          <div className="d-flex justify-content-between align-items-center mb-1">
+            <div className="d-flex align-items-center">
+              <Clock size={17} className="text-info" />
+              <span className="fw-bold ms-75 me-25">In Progress</span>
+            </div>
+            <span>{in_progress}</span>
           </div>
-          <div>
-            <span>8%</span> <ArrowUp className="text-success" size={14} />
-          </div>
-        </div>
-        <div className="d-flex justify-content-between mb-1">
-          <div className="d-flex align-items-center">
-            <Tablet size={17} className="text-success" />
-            <span className="fw-bold ms-75 me-25">Team Tasks</span>
-            <span>- 10%</span>
-          </div>
-          <div>
-            <span>-5%</span> <ArrowDown className="text-danger" size={14} />
-          </div>
-        </div>
-        <div className="d-flex justify-content-between mb-1">
-          <div className="d-flex align-items-center">
-            <Tablet size={17} className="text-success" />
-            <span className="fw-bold ms-75 me-25">Completed Tasks</span>
-            <span>- 10%</span>
-          </div>
-          <div>
-            <span>-5%</span> <ArrowDown className="text-danger" size={14} />
+
+          {/* ✅ Completed */}
+          <div className="d-flex justify-content-between align-items-center">
+            <div className="d-flex align-items-center">
+              <CheckCircle size={17} className="text-success" />
+              <span className="fw-bold ms-75 me-25">Completed</span>
+            </div>
+            <span>{completed}</span>
           </div>
         </div>
       </CardBody>
@@ -122,4 +91,4 @@ const ChartjsRadarChart = ({
   );
 };
 
-export default ChartjsRadarChart;
+export default ChartjsDoughnutChart;

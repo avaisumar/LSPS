@@ -1,143 +1,113 @@
 // ** React Imports
-import { useContext } from 'react'
+import { useContext, useEffect, useState } from "react";
+import axios from "axios";
 
 // ** Reactstrap Imports
-import { Row, Col } from 'reactstrap'
+import { Row, Col } from "reactstrap";
 
 // ** Context
-import { ThemeColors } from '@src/utility/context/ThemeColors'
+import { ThemeColors } from "@src/utility/context/ThemeColors";
 
-// ** Demo Components
-import CompanyTable from './CompanyTable'
-import Earnings from '@src/views/ui-elements/cards/analytics/Earnings'
-import CardMedal from '@src/views/ui-elements/cards/advance/CardMedal'
-import CardMeetup from '@src/views/ui-elements/cards/advance/CardMeetup'
-import StatsCard from '@src/views/ui-elements/cards/statistics/StatsCard'
-import GoalOverview from '@src/views/ui-elements/cards/analytics/GoalOverview'
-import RevenueReport from '@src/views/ui-elements/cards/analytics/RevenueReport'
-import OrdersBarChart from '@src/views/ui-elements/cards/statistics/OrdersBarChart'
-import CardTransactions from '@src/views/ui-elements/cards/advance/CardTransactions'
-import ProfitLineChart from '@src/views/ui-elements/cards/statistics/ProfitLineChart'
-import CardBrowserStates from '@src/views/ui-elements/cards/advance/CardBrowserState'
-import StatsHorizontal from '@components/widgets/stats/StatsHorizontal'
+// ** Components
+import StatsHorizontal from "@components/widgets/stats/StatsHorizontal";
+import { User, UserCheck, UserPlus, UserX } from "react-feather";
+import { useSkin } from "@hooks/useSkin";
+import ChartjsDoughnutChart from "../../charts/chart-js/ChartjsDoughnutChart";
 
-
-// ** Styles
-import '@styles/react/libs/charts/apex-charts.scss'
-import '@styles/base/pages/dashboard-ecommerce.scss'
-import { User, UserCheck, UserPlus, UserX } from 'react-feather'
-import { useSkin } from '@hooks/useSkin'
-import ChartjsDoughnutChart from '../../charts/chart-js/ChartjsDoughnutChart'
-
-
+import "@styles/react/libs/charts/apex-charts.scss";
+import "@styles/base/pages/dashboard-ecommerce.scss";
+import { useSelector } from "react-redux";
 
 const EcommerceDashboard = () => {
-  // ** Context
-  
-  
+  const { colors } = useContext(ThemeColors);
+  const { skin } = useSkin();
 
-  // ** vars
-  const trackBgColor = '#e9ecef'
-  const { colors } = useContext(ThemeColors),
-    { skin } = useSkin(),
-    labelColor = skin === 'dark' ? '#b4b7bd' : '#6e6b7b',
-    gridLineColor = 'rgba(200, 200, 200, 0.2)'
+  const [taskData, setTaskData] = useState({
+    total: 0,
+    pending: 0,
+    in_progress: 0,
+    completed: 0,
+  });
+
+  const token = useSelector((state) => state.auth.accessToken);
+  console.log("token", token); // ✅ adjust key if different
+  useEffect(() => {
+    axios
+      .get("https://lspschoolerp.pythonanywhere.com/erp-api/task/dashboard/", {
+        headers: {
+          Authorization: `Token ${token}`, // ✅ attach token here
+          "Content-Type": "application/json",
+        },
+      })
+      .then((res) => {
+        if (res.data?.self) {
+          setTaskData(res.data.self);
+        }
+      })
+      .catch((err) => {
+        console.error("❌ Error fetching dashboard data:", err);
+      });
+  }, []);
+
+  const labelColor = skin === "dark" ? "#b4b7bd" : "#6e6b7b";
+  console.log("taskData", taskData);
 
   return (
-    <div id='dashboard-ecommerce'>
+    <div id="dashboard-ecommerce">
       <Row>
-        <Col lg='3' sm='6'>
+        <Col lg="3" sm="6">
           <StatsHorizontal
-            color='primary'
-            statTitle='Total Tasks'
+            color="primary"
+            statTitle="Total Tasks"
             icon={<User size={20} />}
-            renderStats={<h3 className='fw-bolder mb-75'>21,4</h3>}
+            renderStats={<h3 className="fw-bolder mb-75">{taskData.total}</h3>}
           />
         </Col>
-        <Col lg='3' sm='6'>
+        <Col lg="3" sm="6">
           <StatsHorizontal
-            color='danger'
-            statTitle='Pending Tasks'
+            color="danger"
+            statTitle="Pending Tasks"
             icon={<UserPlus size={20} />}
-            renderStats={<h3 className='fw-bolder mb-75'>4,567</h3>}
+            renderStats={
+              <h3 className="fw-bolder mb-75">{taskData.pending}</h3>
+            }
           />
         </Col>
-        <Col lg='3' sm='6'>
+        <Col lg="3" sm="6">
           <StatsHorizontal
-            color='success'
-            statTitle='Team Tasks'
+            color="success"
+            statTitle="In Progress"
             icon={<UserCheck size={20} />}
-            renderStats={<h3 className='fw-bolder mb-75'>19,860</h3>}
+            renderStats={
+              <h3 className="fw-bolder mb-75">{taskData.in_progress}</h3>
+            }
           />
         </Col>
-        <Col lg='3' sm='6'>
+        <Col lg="3" sm="6">
           <StatsHorizontal
-            color='warning'
-            statTitle='Completed Tasks'
+            color="warning"
+            statTitle="Completed Tasks"
             icon={<UserX size={20} />}
-            renderStats={<h3 className='fw-bolder mb-75'>237</h3>}
+            renderStats={
+              <h3 className="fw-bolder mb-75">{taskData.completed}</h3>
+            }
           />
         </Col>
       </Row>
-      <Row className='match-height mt-2'>
-  <Col lg='4' md='6' xs='12'>
-    <ChartjsDoughnutChart
-      tooltipShadow='rgba(0, 0, 0, 0.25)'
-      successColorShade={colors.success.main}
-      warningLightColor={colors.warning.light}
-      primary={colors.primary.main}
-    />
-  </Col>
-</Row>
 
-      
-
-      
-      {/* <Row className='match-height'>
-        <Col xl='4' md='6' xs='12'>
-          <CardMedal />
-        </Col>
-        <Col xl='8' md='6' xs='12'>
-          <StatsCard cols={{ xl: '3', sm: '6' }} />
+      <Row className="match-height mt-2">
+        <Col lg="4" md="6" xs="12">
+          <ChartjsDoughnutChart
+            tooltipShadow="rgba(0, 0, 0, 0.25)"
+            successColorShade={colors.success.main}
+            warningLightColor={colors.warning.light}
+            primary={colors.primary.main}
+            taskData={taskData}
+          />
         </Col>
       </Row>
-      <Row className='match-height'>
-        <Col lg='4' md='12'>
-          <Row className='match-height'>
-            <Col lg='6' md='3' xs='6'>
-              <OrdersBarChart warning={colors.warning.main} />
-            </Col>
-            <Col lg='6' md='3' xs='6'>
-              <ProfitLineChart info={colors.info.main} />
-            </Col>
-            <Col lg='12' md='6' xs='12'>
-              <Earnings success={colors.success.main} />
-            </Col>
-          </Row>
-        </Col>
-        <Col lg='8' md='12'>
-          <RevenueReport primary={colors.primary.main} warning={colors.warning.main} />
-        </Col>
-      </Row>
-      <Row className='match-height'>
-        <Col lg='8' xs='12'>
-          <CompanyTable />
-        </Col>
-        <Col lg='4' md='6' xs='12'>
-          <CardMeetup />
-        </Col>
-        <Col lg='4' md='6' xs='12'>
-          <CardBrowserStates colors={colors} trackBgColor={trackBgColor} />
-        </Col>
-        <Col lg='4' md='6' xs='12'>
-          <GoalOverview success={colors.success.main} />
-        </Col>
-        <Col lg='4' md='6' xs='12'>
-          <CardTransactions />
-        </Col>
-      </Row> */}
     </div>
-  )
-}
+  );
+};
 
-export default EcommerceDashboard
+export default EcommerceDashboard;

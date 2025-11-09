@@ -75,24 +75,50 @@ const languageOptions = [
 const MySwal = withReactContent(Swal);
 
 const UserInfoCard = ({ selectedUser, onUserUpdated }) => {
-   const userdata = useSelector((state) => state.auth.userData);
-  const [users, setUsers] = useState([]);
-const flattenTeam = (team = []) => {
-  let flat = [];
-  for (const member of team) {
-    flat.push(member);
-    if (member.subordinates && member.subordinates.length > 0) {
-      flat = flat.concat(flattenTeam(member.subordinates));
-    }
-  }
-  return flat;
+  console.log("selected",selectedUser)
+  const userdata = useSelector((state) => state.auth.userData);
+  const [reopenRequests, setReopenRequests] = useState([]);
+const [permissions, setPermissions] = useState({
+  is_report: selectedUser?.is_report || false,
+  is_task_recive: selectedUser?.is_task_recive || false,
+  is_task_create: selectedUser?.is_task_create || false
+});
+
+const handlePermissionChange = (key) => {
+  setPermissions((prev) => ({ ...prev, [key]: !prev[key] }));
 };
+
+  const [users, setUsers] = useState([]);
+  const flattenTeam = (team = []) => {
+    let flat = [];
+    for (const member of team) {
+      flat.push(member);
+      if (member.subordinates && member.subordinates.length > 0) {
+        flat = flat.concat(flattenTeam(member.subordinates));
+      }
+    }
+    return flat;
+  };
   useEffect(() => {
     if (userdata?.team) {
       const teamList = flattenTeam(userdata.team);
       setUsers(teamList);
     }
   }, [userdata]);
+  useEffect(() => {
+    if (tabtype === "task" && selectedUser?.id) {
+      axios
+        .get(
+          `https://lspschoolerp.pythonanywhere.com/erp-api/task/${selectedUser.id}/reopen/`,
+          { headers: { Authorization: `Token ${token}` } }
+        )
+        .then((res) => {
+          setReopenRequests(res.data || []);
+        })
+        .catch((err) => console.error("Reopen request fetch error:", err));
+    }
+  }, [selectedUser]);
+
   // ** State
   const [show, setShow] = useState(false);
   const { tabtype } = useParams();
@@ -127,6 +153,74 @@ const flattenTeam = (team = []) => {
     }
   }, []);
 
+  // Handle viewing and approving/rejecting reopen requests
+  const handleViewReopen = () => {
+    if (!reopenRequests.length) {
+      return MySwal.fire({
+        icon: "info",
+        title: "No Requests",
+        text: "There are no reopen requests for this task.",
+        confirmButtonText: "OK",
+        customClass: { confirmButton: "btn btn-primary" },
+      });
+    }
+
+    const request = reopenRequests[0]; // assuming one request at a time
+
+    MySwal.fire({
+      title: "Reopen Request",
+      html: `
+      <div style="text-align:left;">
+        <p><strong>From:</strong> ${request.user?.name || "Unknown User"}</p>
+        <p><strong>Message:</strong></p>
+        <p style="background:#f8f9fa; padding:8px; border-radius:6px;">${
+          request.message
+        }</p>
+      </div>
+    `,
+      showCancelButton: true,
+      showDenyButton: true,
+      confirmButtonText: "Accept",
+      denyButtonText: "Reject",
+      cancelButtonText: "Close",
+      customClass: {
+        confirmButton: "btn btn-success",
+        denyButton: "btn btn-danger ms-1",
+        cancelButton: "btn btn-outline-secondary ms-1",
+      },
+      buttonsStyling: false,
+    }).then(async (result) => {
+      if (result.isConfirmed || result.isDenied) {
+        const status = result.isConfirmed ? "accepted" : "rejected";
+        try {
+          await axios.patch(
+            `https://lspschoolerp.pythonanywhere.com/erp-api/task/${selectedUser.id}/reopen/`,
+            { id: request.id, status },
+            { headers: { Authorization: `Token ${token}` } }
+          );
+
+          MySwal.fire({
+            icon: "success",
+            title: `Request ${
+              status === "accepted" ? "Accepted" : "Rejected"
+            }!`,
+            customClass: { confirmButton: "btn btn-success" },
+          });
+
+          // Refresh data
+          if (onUserUpdated) onUserUpdated();
+        } catch (err) {
+          console.error("Reopen update failed:", err);
+          MySwal.fire({
+            icon: "error",
+            title: "Action Failed",
+            text: "Could not update the request. Please try again later.",
+          });
+        }
+      }
+    });
+  };
+
   const defaultValues =
     tabtype === "designation"
       ? { name: selectedUser?.name || "" }
@@ -137,13 +231,14 @@ const flattenTeam = (team = []) => {
           assigned_to: selectedUser?.assigned_to?.id || "",
           status: selectedUser?.status || "pending",
           priority: selectedUser?.priority || "medium",
-          due_date: selectedUser?.due_date || "", 
+          due_date: selectedUser?.due_date || "",
         }
       : {
           firstName: selectedUser?.first_name || "",
           lastName: selectedUser?.last_name || "",
           email: selectedUser?.email || "",
           designation: selectedUser?.designation?.id || "",
+           reporting_manager: selectedUser.reporting_manager ? Number(selectedUser.reporting_manager) : null,
         };
   const {
     reset,
@@ -225,6 +320,10 @@ const flattenTeam = (team = []) => {
           last_name: data.lastName,
           email: data.email,
           designation: Number(data.designation),
+           reporting_manager: data.reporting_manager ? Number(data.reporting_manager) : null,
+           is_report: permissions.is_report,
+  is_task_recive: permissions.is_task_recive,
+  is_task_create: permissions.is_task_create
         };
       }
 
@@ -262,6 +361,63 @@ const flattenTeam = (team = []) => {
         icon: "error",
         title: "Network Error",
         text: "Please try again later.",
+      });
+    }
+  };
+
+  const handleReopen = async () => {
+    if (!selectedUser) return;
+
+    const { id: taskId, assigned_to } = selectedUser;
+
+    // Open SweetAlert popup asking for reopen message
+    const { value: message } = await MySwal.fire({
+      title: "Reopen Task",
+      input: "textarea",
+      inputLabel: "Enter a message for reopening this task",
+      inputPlaceholder: "Type your message here...",
+      inputAttributes: {
+        "aria-label": "Type your message here",
+      },
+      showCancelButton: true,
+      confirmButtonText: "Reopen Task",
+      cancelButtonText: "Cancel",
+      customClass: {
+        confirmButton: "btn btn-warning",
+        cancelButton: "btn btn-outline-secondary ms-1",
+      },
+      buttonsStyling: false,
+    });
+
+    if (!message || !message.trim()) {
+      return; // User cancelled or left it empty
+    }
+
+    try {
+      const res = await axios.post(
+        `https://lspschoolerp.pythonanywhere.com/erp-api/task/${taskId}/reopen/`,
+        {
+          user: assigned_to?.id || userdata.id, // fallback to current user
+          task: taskId,
+          message,
+        },
+        { headers: { Authorization: `Token ${token}` } }
+      );
+
+      await MySwal.fire({
+        icon: "success",
+        title: "Task Reopened!",
+        text: "The task status change request created succesfully.",
+        customClass: { confirmButton: "btn btn-success" },
+      });
+
+      if (onUserUpdated) onUserUpdated(res.data);
+    } catch (error) {
+      console.error("Reopen failed:", error);
+      MySwal.fire({
+        icon: "error",
+        title: "Failed to Reopen Task",
+        text: error.response?.data?.detail || "Please try again later.",
       });
     }
   };
@@ -447,6 +603,31 @@ const flattenTeam = (team = []) => {
                         {selectedUser?.designation?.name}
                       </span>
                     </li>
+                    <li className="mb-75">
+                      <span className="fw-bolder me-25">
+                        Reporting Manager:
+                      </span>
+                      <span className="text-capitalize">
+                        {selectedUser?.reporting_manager?.email || "—"}
+                      </span>
+                    </li>
+                    <li className="mb-75">
+                      <span className="fw-bolder me-25">Permissions:</span>
+                      <div className="d-flex flex-column mt-50">
+                        <span>
+                          <strong>Can Access Reports:</strong>{" "}
+                          {selectedUser?.is_report ? "Yes" : "No"}
+                        </span>
+                        <span>
+                          <strong>Can Receive Tasks:</strong>{" "}
+                          {selectedUser?.is_task_recive ? "Yes" : "No"}
+                        </span>
+                        <span>
+                          <strong>Can Create Tasks:</strong>{" "}
+                          {selectedUser?.is_task_create ? "Yes" : "No"}
+                        </span>
+                      </div>
+                    </li>
                   </>
                 )}
                 {tabtype === "task" && (
@@ -503,7 +684,7 @@ const flattenTeam = (team = []) => {
             <Button color="primary" onClick={() => setShow(true)}>
               Edit
             </Button>
-            {(tabtype === "designation" || tabtype === "task") && (
+            {tabtype === "designation" && (
               <Button
                 className="ms-1"
                 color="danger"
@@ -512,6 +693,33 @@ const flattenTeam = (team = []) => {
               >
                 Delete
               </Button>
+            )}
+            {tabtype === "task" && selectedUser?.status === "completed" && (
+              <>
+                {userdata?.id === selectedUser?.assigned_to?.id &&
+                  reopenRequests.length === 0 && (
+                    <Button
+                      className="ms-1"
+                      color="warning"
+                      outline
+                      onClick={handleReopen}
+                    >
+                      Reopen Request
+                    </Button>
+                  )}
+
+                {userdata?.id !== selectedUser?.assigned_to?.id &&
+                  reopenRequests.length > 0 && (
+                    <Button
+                      className="ms-1"
+                      color="info"
+                      outline
+                      onClick={handleViewReopen}
+                    >
+                      View Request
+                    </Button>
+                  )}
+              </>
             )}
           </div>
         </CardBody>
@@ -636,6 +844,68 @@ const flattenTeam = (team = []) => {
                       )}
                     />
                   </Col>
+                  <Col md={6} xs={12}>
+                    <Label className="form-label" for="reporting_manager">
+                      Reporting Manager
+                    </Label>
+                    <Controller
+                      name="reporting_manager"
+                      control={control}
+                      defaultValue={selectedUser?.reporting_manager?.id || ""}
+                      render={({ field }) => (
+                        <Input
+                          type="select"
+                          id="reporting_manager"
+                          {...field}
+                          invalid={errors.reporting_manager && true}
+                        >
+                          <option value="">Select Reporting Manager</option>
+                          {users?.map((u) => (
+                            <option key={u.id} value={u.id}>
+                              {u.name || u.email}
+                            </option>
+                          ))}
+                        </Input>
+                      )}
+                    />
+                  </Col>
+                  <div className="d-flex flex-column ms-1">
+        <div className="form-check mb-50">
+          <Input
+            type="checkbox"
+            id="is_report"
+            checked={permissions.is_report}
+            onChange={() => handlePermissionChange("is_report")}
+          />
+          <Label for="is_report" className="form-check-label ms-1">
+            Can Access Reports
+          </Label>
+        </div>
+
+        <div className="form-check mb-50">
+          <Input
+            type="checkbox"
+            id="is_task_recive"
+            checked={permissions.is_task_recive}
+            onChange={() => handlePermissionChange("is_task_recive")}
+          />
+          <Label for="is_task_recive" className="form-check-label ms-1">
+            Can Receive Tasks
+          </Label>
+        </div>
+
+        <div className="form-check">
+          <Input
+            type="checkbox"
+            id="is_task_create"
+            checked={permissions.is_task_create}
+            onChange={() => handlePermissionChange("is_task_create")}
+          />
+          <Label for="is_task_create" className="form-check-label ms-1">
+            Can Create Tasks
+          </Label>
+        </div>
+      </div>
 
                   {/* <Col md={6} xs={12}>
                 <Label className='form-label' for='status'>

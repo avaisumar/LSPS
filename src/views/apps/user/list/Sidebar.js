@@ -81,6 +81,15 @@ const SidebarNewUsers = ({ open, toggleSidebar, tabtype }) => {
 
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
+  const [permissions, setPermissions] = useState({
+    is_report: false,
+    is_task_recive: false,
+    is_task_create: false,
+  });
+
+  const handlePermissionChange = (key) => {
+    setPermissions((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   // ** Store Vars
   const dispatch = useDispatch();
@@ -90,7 +99,6 @@ const SidebarNewUsers = ({ open, toggleSidebar, tabtype }) => {
   const teamList = userdata?.team || [];
   const [teamMembers, setTeamMembers] = useState([]);
   console.log("teamList", teamList);
-  
 
   useEffect(() => {
     console.log("enter");
@@ -141,9 +149,9 @@ const SidebarNewUsers = ({ open, toggleSidebar, tabtype }) => {
     return flat;
   };
   useEffect(() => {
-  const flatTeam = flattenTeam(teamList || []);
-  setTeamMembers(flatTeam);
-}, [teamList]);
+    const flatTeam = flattenTeam(teamList || []);
+    setTeamMembers(flatTeam);
+  }, [teamList]);
 
   // ** Function to handle form submit
   const onSubmit = async (data) => {
@@ -171,6 +179,8 @@ const SidebarNewUsers = ({ open, toggleSidebar, tabtype }) => {
           firstname: data.firstname,
           lastname: data.lastname,
           designation: role,
+          reporting_manager: data.reporting_manager || null,
+          ...permissions, // ✅ add permissions here
         };
 
         const res = await axios.post(
@@ -193,8 +203,8 @@ const SidebarNewUsers = ({ open, toggleSidebar, tabtype }) => {
           description: data.description,
           status: data.status,
           priority: data.priority,
-    due_date: data.due_date,
-    assigned_to: data.assigned_to
+          due_date: data.due_date,
+          assigned_to: data.assigned_to,
         };
 
         const res = await axios.post(
@@ -343,7 +353,7 @@ const SidebarNewUsers = ({ open, toggleSidebar, tabtype }) => {
                       <option value="">Select Team Member</option>
                       {teamMembers.map((member) => (
                         <option key={member.id} value={member.id}>
-                          {member.first_name} 
+                          {member.first_name}
                         </option>
                       ))}
                     </Input>
@@ -452,6 +462,25 @@ const SidebarNewUsers = ({ open, toggleSidebar, tabtype }) => {
                 </Input>
               </div>
               <div className="mb-1">
+                <Label className="form-label" for="reporting_manager">
+                  Reporting Manager
+                </Label>
+                <Controller
+                  name="reporting_manager"
+                  control={control}
+                  render={({ field }) => (
+                    <Input type="select" id="reporting_manager" {...field}>
+                      <option value="">Select Reporting Manager</option>
+                      {teamMembers.map((member) => (
+                        <option key={member.id} value={member.id}>
+                          {member.first_name} {member.last_name}
+                        </option>
+                      ))}
+                    </Input>
+                  )}
+                />
+              </div>
+              <div className="mb-1">
                 <Label className="form-label" for="username">
                   Password <span className="text-danger">*</span>
                 </Label>
@@ -468,6 +497,45 @@ const SidebarNewUsers = ({ open, toggleSidebar, tabtype }) => {
                     />
                   )}
                 />
+              </div>
+              <div className="mb-1">
+                <Label className="form-label">Permissions</Label>
+
+                <div className="form-check">
+                  <Input
+                    type="checkbox"
+                    id="is_report"
+                    checked={permissions.is_report}
+                    onChange={() => handlePermissionChange("is_report")}
+                  />
+                  <Label for="is_report" className="form-check-label ms-1">
+                    Can Access Reports
+                  </Label>
+                </div>
+
+                <div className="form-check">
+                  <Input
+                    type="checkbox"
+                    id="is_task_recive"
+                    checked={permissions.is_task_recive}
+                    onChange={() => handlePermissionChange("is_task_recive")}
+                  />
+                  <Label for="is_task_recive" className="form-check-label ms-1">
+                    Can Receive Tasks
+                  </Label>
+                </div>
+
+                <div className="form-check">
+                  <Input
+                    type="checkbox"
+                    id="is_task_create"
+                    checked={permissions.is_task_create}
+                    onChange={() => handlePermissionChange("is_task_create")}
+                  />
+                  <Label for="is_task_create" className="form-check-label ms-1">
+                    Can Create Tasks
+                  </Label>
+                </div>
               </div>
             </>
           )}

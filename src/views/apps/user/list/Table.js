@@ -67,6 +67,8 @@ const CustomHeader = ({
   // ** Converts table to CSV
 
   const { tabtype } = useParams();
+  // Get user data
+  const userData = JSON.parse(localStorage.getItem("userData") || "{}");
 
   function convertArrayOfObjectsToCSV(array) {
     let result;
@@ -375,17 +377,29 @@ const CustomHeader = ({
               </DropdownMenu>
             </UncontrolledDropdown>
             {tabtype !== "report" && (
-              <Button
-                className="add-new-user"
-                color="primary"
-                onClick={toggleSidebar}
-              >
-                {tabtype === "designation"
-                  ? "Add New Designation"
-                  : tabtype === "task"
-                  ? "Add New Task"
-                  : "Add New User"}
-              </Button>
+              <>
+                {tabtype === "task" ? (
+                  userData?.is_task_create ? (
+                    <Button
+                      className="add-new-user"
+                      color="primary"
+                      onClick={toggleSidebar}
+                    >
+                      Add New Task
+                    </Button>
+                  ) : null
+                ) : (
+                  <Button
+                    className="add-new-user"
+                    color="primary"
+                    onClick={toggleSidebar}
+                  >
+                    {tabtype === "designation"
+                      ? "Add New Designation"
+                      : "Add New User"}
+                  </Button>
+                )}
+              </>
             )}
           </div>
         </Col>
@@ -404,6 +418,7 @@ const UsersList = () => {
   const [selectedStatus, setSelectedStatus] = useState("");
   const [selectedUser, setSelectedUser] = useState("");
   const [userOptions, setUserOptions] = useState([]);
+  const [showMyTasksOnly, setShowMyTasksOnly] = useState(true);
 
   const teamList = userdata?.team || [];
   const flattenTeam = (teamArray) => {
@@ -417,18 +432,16 @@ const UsersList = () => {
     return flat;
   };
   useEffect(() => {
-  const flatTeam = flattenTeam(teamList || []);
+    const flatTeam = flattenTeam(teamList || []);
 
-  const formattedOptions = flatTeam.map((user) => ({
-    value: user.id,
-    label:
-      user.first_name && user.last_name
-        ? `${user.first_name}`
-        : user.email,
-  }));
+    const formattedOptions = flatTeam.map((user) => ({
+      value: user.id,
+      label:
+        user.first_name && user.last_name ? `${user.first_name}` : user.email,
+    }));
 
-  setUserOptions(formattedOptions);
-}, [teamList]);
+    setUserOptions(formattedOptions);
+  }, [teamList]);
 
   console.log("st111", store);
   // ** States
@@ -454,30 +467,55 @@ const UsersList = () => {
 
   // ** Function to toggle sidebar
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+  // Get user data
+  const userData = JSON.parse(localStorage.getItem("userData") || "{}");
 
   // ** Get data on mount
-  useEffect(() => {
-    let endpoint = "";
-    let queryParams = {};
+ useEffect(() => {
+  let endpoint = "";
+  let queryParams = {};
 
-    if (tabtype === "designation") {
-      endpoint = "designation/";
-    } else if (tabtype === "task" || tabtype === "report") {
-      endpoint = "task/";
+  if (tabtype === "designation") {
+    endpoint = "designation/";
+  } else if (tabtype === "task" || tabtype === "report") {
+    endpoint = "task/";
 
-      const userId = userdata?.id;
-      if (tabtype === "report" && userId) {
-        queryParams.assigned_to = userId;
-      }
+    const userId = userdata?.id;
+    queryParams.perm = true; // ✅ Always include permission flag
 
-      if (selectedStatus) queryParams.status = selectedStatus;
-      if (selectedUser) queryParams.assigned_to = selectedUser;
-    } else {
-      endpoint = "user/";
+    // ✅ For report tab — assigned tasks to current user
+    if (tabtype === "report" && userId) {
+      queryParams.assigned_to = userId;
     }
 
-    dispatch(getAllData({ endpoint, queryParams }));
-  }, [dispatch, tabtype, userdata, selectedStatus, selectedUser]);
+    // ✅ For task tab
+    if (tabtype === "task" && userId) {
+      if (showMyTasksOnly) {
+        // when checkbox checked → show tasks assigned to me
+        queryParams.assigned_to = userId;
+      } else {
+        // when unchecked → show tasks I created
+        queryParams.created_by = userId;
+      }
+    }
+
+    // ✅ Apply additional filters if selected
+    if (selectedStatus) queryParams.status = selectedStatus;
+    if (selectedUser) queryParams.assigned_to = selectedUser;
+  } else {
+    endpoint = "user/";
+  }
+
+  dispatch(getAllData({ endpoint, queryParams }));
+}, [
+  dispatch,
+  tabtype,
+  userdata,
+  selectedStatus,
+  selectedUser,
+  showMyTasksOnly, // ✅ re-fetch when toggled
+]);
+
 
   // ** User filter options
   const roleOptions = [
@@ -784,10 +822,28 @@ const UsersList = () => {
                   onChange={(opt) => setSelectedUser(opt?.value || "")}
                   isClearable
                 />
-                {console.log("userOptions",userOptions)}
+                {console.log("userOptions", userOptions)}
               </div>
             </div>
           )}
+          {tabtype === "task" &&
+            userdata?.is_task_recive &&
+            userdata?.is_task_create && (
+              <div className="d-flex gap-2 align-items-center flex-wrap p-1">
+                <div className="d-flex align-items-center">
+                  <Input
+                    type="checkbox"
+                    id="show-my-tasks"
+                    className="me-50"
+                    checked={showMyTasksOnly}
+                    onChange={(e) => setShowMyTasksOnly(e.target.checked)}
+                  />
+                  <Label htmlFor="show-my-tasks" className="mb-0">
+                    Show My Tasks Only
+                  </Label>
+                </div>
+              </div>
+            )}
 
           <DataTable
             noHeader
