@@ -130,6 +130,7 @@ const SidebarNewUsers = ({ open, toggleSidebar, tabtype }) => {
     setValue,
     setError,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm({
     defaultValues:
@@ -153,6 +154,14 @@ const SidebarNewUsers = ({ open, toggleSidebar, tabtype }) => {
     const flatTeam = flattenTeam(teamList || []);
     setTeamMembers(flatTeam);
   }, [teamList]);
+
+  // ✅ Clear error message when user changes any field
+useEffect(() => {
+  const subscription = watch(() => {
+    if (errorMessage) setErrorMessage("");
+  });
+  return () => subscription.unsubscribe();
+}, [watch, errorMessage]);
 
   // ** Function to handle form submit
   const onSubmit = async (data) => {
