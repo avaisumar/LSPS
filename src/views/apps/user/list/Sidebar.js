@@ -78,6 +78,7 @@ const SidebarNewUsers = ({ open, toggleSidebar, tabtype }) => {
   const [role, setRole] = useState("");
   const [designations, setDesignations] = useState([]);
   const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
@@ -155,6 +156,7 @@ const SidebarNewUsers = ({ open, toggleSidebar, tabtype }) => {
 
   // ** Function to handle form submit
   const onSubmit = async (data) => {
+    setErrorMessage(""); // clear previous errors
     try {
       if (tabtype === "designation") {
         if (data.name?.length > 0) {
@@ -220,6 +222,12 @@ const SidebarNewUsers = ({ open, toggleSidebar, tabtype }) => {
         toggleSidebar();
       }
     } catch (err) {
+      const msg =
+    err.response?.data?.error ||
+    err.response?.data?.error ||
+    "Failed to complete request. Please try again.";
+      setErrorMessage(msg); // show the message
+      setToastOpen(false);
       console.error("Error creating record:", err.response || err);
     }
   };
@@ -538,6 +546,11 @@ const SidebarNewUsers = ({ open, toggleSidebar, tabtype }) => {
                 </div>
               </div>
             </>
+          )}
+          {errorMessage && (
+            <Alert color="danger" className="mt-1">
+              {errorMessage}
+            </Alert>
           )}
           <Button type="submit" className="me-1" color="primary">
             Submit
