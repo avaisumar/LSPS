@@ -32,6 +32,8 @@ export const authSlice = createSlice({
       localStorage.setItem('userData', JSON.stringify(action.payload))
       localStorage.setItem(config.storageTokenKeyName, JSON.stringify(action.payload.accessToken))
       localStorage.setItem(config.storageRefreshTokenKeyName, JSON.stringify(action.payload.refreshToken))
+      window.location.reload()
+
     },
     handleLogout: state => {
       state.userData = {}

@@ -166,7 +166,7 @@ ability.update(userAbility)
           </div>
           <h2 className='brand-text text-primary ms-1'>Little Star Public School ERP</h2>
         </Link>
-        <Col className='d-none d-lg-flex align-items-center p-5' lg='8' sm='12'>
+        <Col className='d-lg-flex align-items-center p-5' lg='8' sm='12'>
           <div className='w-100 d-lg-flex align-items-center justify-content-center px-5'>
             <img className='img-fluid' src={Logobg} alt='Login Cover' />
           </div>

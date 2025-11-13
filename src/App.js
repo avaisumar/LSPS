@@ -1,4 +1,4 @@
-import React, { Suspense, useContext, useEffect } from 'react'
+import React, { Suspense, useContext, useEffect, useState } from 'react'
 
 // ** Router Import
 import Router from './router/Router'
@@ -7,9 +7,11 @@ import Router from './router/Router'
 // ** ACL / Ability Import
 import { AbilityContext } from '@src/utility/context/Can'
 import useJwt from './@core/auth/jwt/useJwt'
+import { Spinner } from 'reactstrap'
 
 const App = () => {
   const ability = useContext(AbilityContext)
+  const [isReady, setIsReady] = useState(false)
 
   useEffect(() => {
     // 1️⃣ Restore user from localStorage
@@ -27,7 +29,12 @@ const App = () => {
       const userAbility = userData.ability || [{ action: 'manage', subject: 'all' }]
       ability.update(userAbility)
     }
+     setIsReady(true)
   }, [ability])
+
+  if (!isReady) {
+    return <Spinner className='content-loader' /> // or null
+  }
   return (
     <Suspense fallback={null}>
       <Router />

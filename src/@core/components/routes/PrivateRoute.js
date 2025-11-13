@@ -29,12 +29,12 @@ const PrivateRoute = ({ children, route }) => {
     if (user && restrictedRoute) {
       return <Navigate to='/' />
     }
-    if (user && restrictedRoute && user.role === 'client') {
-      return <Navigate to='/access-control' />
-    }
-    if (user && !ability.can(action || 'read', resource)) {
-      return <Navigate to='/misc/not-authorized' replace />
-    }
+    // if (user && restrictedRoute && user.role === 'client') {
+    //   return <Navigate to='/access-control' />
+    // }
+    // if (user && !ability.can(action || 'read', resource)) {
+    //   return <Navigate to='/misc/not-authorized' replace />
+    // }
   }
 
   return <Suspense fallback={<Spinner className='content-loader' />}>{children}</Suspense>

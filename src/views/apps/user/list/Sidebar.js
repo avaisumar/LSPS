@@ -97,6 +97,9 @@ const SidebarNewUsers = ({ open, toggleSidebar, tabtype }) => {
   const token = useSelector((state) => state.auth.accessToken); // get token from Redux
   console.log("state.auth", token);
   const userdata = useSelector((state) => state.auth.userData);
+    const allData = useSelector((state) => state.users.allData);
+
+  console.log("allData",allData)
   const teamList = userdata?.team || [];
   const [teamMembers, setTeamMembers] = useState([]);
   console.log("teamList", teamList);
@@ -488,9 +491,9 @@ useEffect(() => {
                   render={({ field }) => (
                     <Input type="select" id="reporting_manager" {...field}>
                       <option value="">Select Reporting Manager</option>
-                      {teamMembers.map((member) => (
+                      {allData?.map((member) => (
                         <option key={member.id} value={member.id}>
-                          {member.first_name} {member.last_name}
+                          {member.first_name} 
                         </option>
                       ))}
                     </Input>
