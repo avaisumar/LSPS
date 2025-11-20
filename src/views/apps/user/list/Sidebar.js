@@ -29,6 +29,7 @@ import {
 import { addUser, getAllData } from "../store";
 import { useDispatch, useSelector } from "react-redux";
 import axios from "axios";
+import { Eye, EyeOff } from "react-feather";
 
 const defaultValues = {
   email: "",
@@ -75,6 +76,9 @@ const SidebarNewUsers = ({ open, toggleSidebar, tabtype }) => {
   // ** States
   const [data, setData] = useState(null);
   const [plan, setPlan] = useState("basic");
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+
   const [role, setRole] = useState("");
   const [designations, setDesignations] = useState([]);
   const [successMessage, setSuccessMessage] = useState("");
@@ -97,9 +101,9 @@ const SidebarNewUsers = ({ open, toggleSidebar, tabtype }) => {
   const token = useSelector((state) => state.auth.accessToken); // get token from Redux
   console.log("state.auth", token);
   const userdata = useSelector((state) => state.auth.userData);
-    const allData = useSelector((state) => state.users.allData);
+  const allData = useSelector((state) => state.users.allData);
 
-  console.log("allData",allData)
+  console.log("allData", allData);
   const teamList = userdata?.team || [];
   const [teamMembers, setTeamMembers] = useState([]);
   console.log("teamList", teamList);
@@ -159,12 +163,12 @@ const SidebarNewUsers = ({ open, toggleSidebar, tabtype }) => {
   }, [teamList]);
 
   // ✅ Clear error message when user changes any field
-useEffect(() => {
-  const subscription = watch(() => {
-    if (errorMessage) setErrorMessage("");
-  });
-  return () => subscription.unsubscribe();
-}, [watch, errorMessage]);
+  useEffect(() => {
+    const subscription = watch(() => {
+      if (errorMessage) setErrorMessage("");
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, errorMessage]);
 
   // ** Function to handle form submit
   const onSubmit = async (data) => {
@@ -186,21 +190,34 @@ useEffect(() => {
       }
 
       // ✅ USER CREATION
+      // ✅ USER CREATION (with IMAGE upload)
       else if (tabtype === "user") {
-        const payload = {
-          email: data.email,
-          password: data.password,
-          firstname: data.firstname,
-          lastname: data.lastname,
-          designation: role,
-          reporting_manager: data.reporting_manager || null,
-          ...permissions, // ✅ add permissions here
-        };
+        const formData = new FormData();
+
+        formData.append("email", data.email);
+        formData.append("password", data.password);
+        formData.append("firstname", data.firstname);
+        formData.append("lastname", data.lastname);
+        formData.append("designation", role);
+        formData.append("reporting_manager", data.reporting_manager || "");
+        formData.append("is_report", permissions.is_report);
+        formData.append("is_task_recive", permissions.is_task_recive);
+        formData.append("is_task_create", permissions.is_task_create);
+
+        // ✅ Add image if selected
+        if (imageFile) {
+          formData.append("image", imageFile);
+        }
 
         const res = await axios.post(
           "https://lspschoolerp.pythonanywhere.com/erp-api/user/createuser/",
-          payload,
-          { headers: { Authorization: `Token ${token}` } }
+          formData,
+          {
+            headers: {
+              Authorization: `Token ${token}`,
+              "Content-Type": "multipart/form-data",
+            },
+          }
         );
 
         console.log("User created:", res.data);
@@ -235,9 +252,9 @@ useEffect(() => {
       }
     } catch (err) {
       const msg =
-    err.response?.data?.error ||
-    err.response?.data?.error ||
-    "Failed to complete request. Please try again.";
+        err.response?.data?.error ||
+        err.response?.data?.error ||
+        "Failed to complete request. Please try again.";
       setErrorMessage(msg); // show the message
       setToastOpen(false);
       console.error("Error creating record:", err.response || err);
@@ -442,6 +459,34 @@ useEffect(() => {
                 />
               </div>
               <div className="mb-1">
+                <Label className="form-label" for="userImage">
+                  Profile Image
+                </Label>
+
+                <Input
+                  type="file"
+                  id="userImage"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      setImageFile(file);
+                      setImagePreview(URL.createObjectURL(file));
+                    }
+                  }}
+                />
+
+                {imagePreview && (
+                  <img
+                    src={imagePreview}
+                    alt="profile preview"
+                    height="100"
+                    className="mt-1 rounded"
+                    style={{ border: "1px solid #ddd", padding: "4px" }}
+                  />
+                )}
+              </div>
+              <div className="mb-1">
                 <Label className="form-label" for="userEmail">
                   Email <span className="text-danger">*</span>
                 </Label>
@@ -493,7 +538,7 @@ useEffect(() => {
                       <option value="">Select Reporting Manager</option>
                       {allData?.map((member) => (
                         <option key={member.id} value={member.id}>
-                          {member.first_name} 
+                          {member.first_name}
                         </option>
                       ))}
                     </Input>
@@ -501,21 +546,35 @@ useEffect(() => {
                 />
               </div>
               <div className="mb-1">
-                <Label className="form-label" for="username">
+                <Label className="form-label" for="password">
                   Password <span className="text-danger">*</span>
                 </Label>
+
                 <Controller
                   name="password"
                   control={control}
-                  render={({ field }) => (
-                    <Input
-                      type="password"
-                      id="password"
-                      placeholder="*****"
-                      invalid={errors.lastname && true}
-                      {...field}
-                    />
-                  )}
+                  render={({ field }) => {
+                    const [showPwd, setShowPwd] = useState(false);
+
+                    return (
+                      <div className="input-group">
+                        <Input
+                          type={showPwd ? "text" : "password"}
+                          id="password"
+                          placeholder="*****"
+                          invalid={errors.password && true}
+                          {...field}
+                        />
+                        <span
+                          className="input-group-text"
+                          style={{ cursor: "pointer" }}
+                          onClick={() => setShowPwd(!showPwd)}
+                        >
+                          {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </span>
+                      </div>
+                    );
+                  }}
                 />
               </div>
               <div className="mb-1">

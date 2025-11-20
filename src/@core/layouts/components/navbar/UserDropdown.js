@@ -13,7 +13,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import { handleLogout } from '@store/authentication'
 
 // ** Third Party Components
-import { User, Mail, CheckSquare, MessageSquare, Settings, CreditCard, HelpCircle, Power } from 'react-feather'
+import { Power } from 'react-feather'
 
 // ** Reactstrap Imports
 import { UncontrolledDropdown, DropdownMenu, DropdownToggle, DropdownItem } from 'reactstrap'
@@ -23,16 +23,14 @@ import defaultAvatar from '@src/assets/images/portrait/small/avatar-s-11.jpg'
 import axios from 'axios'
 
 const UserDropdown = () => {
-  // ** Store Vars
   const dispatch = useDispatch()
   const navigate = useNavigate()
 
-  // ** State
   const [userData, setUserData] = useState(null)
-const token = useSelector(state => state.auth.accessToken)
+  const token = useSelector(state => state.auth.accessToken)
+
   const handleUserLogout = async () => {
     try {
-      // Call backend logout API
       await axios.post(
         'https://lspschoolerp.pythonanywhere.com/erp-api/user/logout/',
         {},
@@ -40,35 +38,49 @@ const token = useSelector(state => state.auth.accessToken)
       )
     } catch (err) {
       console.error('Logout API failed:', err)
-      // optional: show a toast or alert
     } finally {
-      // Clear Redux + localStorage
       dispatch(handleLogout())
-      navigate('/login') // redirect to login
+      navigate('/login')
     }
   }
-  //** ComponentDidMount
+
   useEffect(() => {
     if (isUserLoggedIn() !== null) {
       setUserData(JSON.parse(localStorage.getItem('userData')))
     }
   }, [])
-  console.log("1",userData)
 
-  //** Vars
-  const userAvatar = (userData && userData.avatar) || defaultAvatar
+  console.log("1", userData)
+
+  // ** Build correct image URL
+  const BASE_URL = "https://lspschoolerp.pythonanywhere.com"
+
+  const userAvatar =
+    userData?.image
+      ? `${BASE_URL}${userData.image}`   // prepend base URL
+      : defaultAvatar
 
   return (
     <UncontrolledDropdown tag='li' className='dropdown-user nav-item'>
-      <DropdownToggle href='/' tag='a' className='nav-link dropdown-user-link' onClick={e => e.preventDefault()}>
+      <DropdownToggle
+        href='/'
+        tag='a'
+        className='nav-link dropdown-user-link'
+        onClick={e => e.preventDefault()}
+      >
         <div className='user-nav d-sm-flex d-none'>
-          <span className='user-name fw-bold'>{(userData && userData.first_name) || 'John Doe'}</span>
-          <span className='user-status'>{(userData && userData.role) || 'Admin'}</span>
+          <span className='user-name fw-bold'>
+            {userData?.first_name || 'John Doe'}
+          </span>
+          <span className='user-status'>
+            {userData?.designation?.name || 'Admin'}
+          </span>
         </div>
         <Avatar img={userAvatar} imgHeight='40' imgWidth='40' status='online' />
       </DropdownToggle>
+
       <DropdownMenu end>
-        <DropdownItem tag={Link} to='/login' onClick={() => handleUserLogout()}>
+        <DropdownItem tag={Link} to='/login' onClick={handleUserLogout}>
           <Power size={14} className='me-75' />
           <span className='align-middle'>Logout</span>
         </DropdownItem>

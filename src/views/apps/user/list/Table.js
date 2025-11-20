@@ -209,28 +209,41 @@ const CustomHeader = ({
     }, 600);
   };
 
-  function downloadCSV(array) {
-    if (!array || array.length === 0) return;
+ function downloadCSV(array) {
+  if (!array || array.length === 0) return;
 
-    const csvContent = [
-      Object.keys(array[0]).join(","),
-      ...array.map((obj) => Object.values(obj).join(",")),
-    ].join("\n");
+  const headers = Object.keys(array[0]).map((h) => h.toUpperCase());
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    saveAs(blob, "export.csv");
-  }
+  const csvContent = [
+    headers.join(","), // UPPERCASE HEADERS
+    ...array.map((obj) => Object.values(obj).join(",")),
+  ].join("\n");
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  saveAs(blob, "export.csv");
+}
+
 
   // ✅ Export to Excel
   function downloadExcel(array) {
-    if (!array || array.length === 0) return;
+  if (!array || array.length === 0) return;
 
-    const worksheet = XLSX.utils.json_to_sheet(array);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
+  // Convert keys to UPPERCASE for Excel
+  const newArray = array.map((obj) => {
+    const transformed = {};
+    Object.keys(obj).forEach((key) => {
+      transformed[key.toUpperCase()] = obj[key];
+    });
+    return transformed;
+  });
 
-    XLSX.writeFile(workbook, "export.xlsx");
-  }
+  const worksheet = XLSX.utils.json_to_sheet(newArray);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
+
+  XLSX.writeFile(workbook, "export.xlsx");
+}
+
 
   // ✅ Export to PDF
   function downloadPDF(array) {

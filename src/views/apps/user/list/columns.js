@@ -283,6 +283,14 @@ const taskColumns = [
     cell: row => <span className='text-capitalize'>{row.priority}</span>
   },
   {
+    name: 'Assigned To',
+    minWidth: '230px',
+    sortable: true,
+    sortField: 'assigned',
+    selector: row => row.assigned_to.name,
+    cell: row => <span className='text-capitalize'>{row.assigned_to?.name}</span>
+  },
+  {
     name: 'Due Date',
     minWidth: '230px',
     sortable: true,

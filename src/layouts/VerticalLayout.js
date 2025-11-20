@@ -23,6 +23,11 @@ const VerticalLayout = props => {
     if (item.id === 'task' && !(userData.is_task_create || userData.is_task_recive)) {
       return false
     }
+    console.log("userData.is_superuser",userData.is_superuser)
+
+    if ((item.id === 'users' || item.id === 'designation') && !userData.is_superuser) {
+      return false
+    }
 
     // Otherwise, keep everything else
     return true

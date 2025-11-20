@@ -194,6 +194,8 @@ const UserView = () => {
           />
 
           {/* ✅ Attachments Section */}
+          {tabtype === "task" && (
+            <>
           <Card className="mt-2">
             <CardBody>
               <div className="d-flex justify-content-between align-items-center mb-1">
@@ -306,6 +308,10 @@ const UserView = () => {
               </div>
             </CardBody>
           </Card>
+            </>
+
+                  )}
+
         </Col>
 
         {/* RIGHT COLUMN */}
@@ -314,9 +320,12 @@ const UserView = () => {
             <UserTabs active={active} toggleTab={toggleTab} />
           </Col>
         )}
+        {tabtype === "task" && (
         <Col lg="6" className="ps-lg-3">
           {selectedUser && <BasicTimeline taskId={selectedUser.id} />}
         </Col>
+        )}
+
       </Row>
 
       {/* 🟢 Add Attachment Modal */}

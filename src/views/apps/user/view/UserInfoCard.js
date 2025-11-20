@@ -75,18 +75,22 @@ const languageOptions = [
 const MySwal = withReactContent(Swal);
 
 const UserInfoCard = ({ selectedUser, onUserUpdated }) => {
-  console.log("selected",selectedUser)
+  console.log("selected", selectedUser);
   const userdata = useSelector((state) => state.auth.userData);
-  const [reopenRequests, setReopenRequests] = useState([]);
-const [permissions, setPermissions] = useState({
-  is_report: selectedUser?.is_report || false,
-  is_task_recive: selectedUser?.is_task_recive || false,
-  is_task_create: selectedUser?.is_task_create || false
-});
+  const BASE_URL = "https://lspschoolerp.pythonanywhere.com";
+  const [imagePreview, setImagePreview] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
 
-const handlePermissionChange = (key) => {
-  setPermissions((prev) => ({ ...prev, [key]: !prev[key] }));
-};
+  const [reopenRequests, setReopenRequests] = useState([]);
+  const [permissions, setPermissions] = useState({
+    is_report: selectedUser?.is_report || false,
+    is_task_recive: selectedUser?.is_task_recive || false,
+    is_task_create: selectedUser?.is_task_create || false,
+  });
+
+  const handlePermissionChange = (key) => {
+    setPermissions((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   const [users, setUsers] = useState([]);
   const flattenTeam = (team = []) => {
@@ -238,7 +242,9 @@ const handlePermissionChange = (key) => {
           lastName: selectedUser?.last_name || "",
           email: selectedUser?.email || "",
           designation: selectedUser?.designation?.id || "",
-           reporting_manager: selectedUser.reporting_manager ? Number(selectedUser.reporting_manager) : null,
+          reporting_manager: selectedUser.reporting_manager
+            ? Number(selectedUser.reporting_manager)
+            : null,
         };
   const {
     reset,
@@ -252,13 +258,14 @@ const handlePermissionChange = (key) => {
 
   // ** render user img
   const renderUserImg = () => {
-    if (selectedUser !== null && selectedUser.avatar?.length) {
+    console.log("@@", selectedUser);
+    if (selectedUser !== null && selectedUser.image) {
       return (
         <img
           height="110"
           width="110"
           alt="user-avatar"
-          src={selectedUser.avatar}
+          src={selectedUser.image}
           className="img-fluid rounded mt-3 mb-2"
         />
       );
@@ -290,19 +297,32 @@ const handlePermissionChange = (key) => {
       const isEdit = Boolean(id);
 
       let url = "";
-      let body = {};
       let method = isEdit ? "PUT" : "POST";
+      let options = {};
 
+      // ---------- DESIGNATION ----------
       if (tabtype === "designation") {
         url = `https://lspschoolerp.pythonanywhere.com/erp-api/designation/${
           isEdit ? `${id}/` : ""
         }`;
-        body = { name: data.name };
-      } else if (tabtype === "task") {
+
+        options = {
+          method,
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Token ${token}`,
+          },
+          body: JSON.stringify({ name: data.name }),
+        };
+      }
+
+      // ---------- TASK ----------
+      else if (tabtype === "task") {
         url = `https://lspschoolerp.pythonanywhere.com/erp-api/task/${
           isEdit ? `${id}/` : ""
         }`;
-        body = {
+
+        const body = {
           title: data.title,
           description: data.description,
           assigned_to: Number(data.assigned_to),
@@ -311,30 +331,53 @@ const handlePermissionChange = (key) => {
           due_date: data.due_date,
           assigned_by: data.id,
         };
-      } else {
-        url = `https://lspschoolerp.pythonanywhere.com/erp-api/user/${
-          isEdit ? `${id}/` : ""
-        }`;
-        body = {
-          first_name: data.firstName,
-          last_name: data.lastName,
-          email: data.email,
-          designation: Number(data.designation),
-           reporting_manager: data.reporting_manager ? Number(data.reporting_manager) : null,
-           is_report: permissions.is_report,
-  is_task_recive: permissions.is_task_recive,
-  is_task_create: permissions.is_task_create
+
+        options = {
+          method,
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Token ${token}`,
+          },
+          body: JSON.stringify(body),
         };
       }
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Token ${token}`,
-        },
-        body: JSON.stringify(body),
-      });
+      // ---------- USER (IMAGE + OTHER FIELDS) ----------
+      else {
+        url = `https://lspschoolerp.pythonanywhere.com/erp-api/user/${
+          isEdit ? `${id}/` : ""
+        }`;
+
+        const formData = new FormData();
+        formData.append("first_name", data.firstName);
+        formData.append("last_name", data.lastName);
+        formData.append("email", data.email);
+        formData.append("designation", Number(data.designation));
+        formData.append(
+          "reporting_manager",
+          data.reporting_manager ? Number(data.reporting_manager) : ""
+        );
+
+        formData.append("is_report", permissions.is_report);
+        formData.append("is_task_recive", permissions.is_task_recive);
+        formData.append("is_task_create", permissions.is_task_create);
+
+        // Add image if user selected one
+        if (imageFile) {
+          formData.append("image", imageFile); // <-- actual file
+        }
+
+        options = {
+          method,
+          headers: {
+            Authorization: `Token ${token}`, // NO Content-Type for FormData
+          },
+          body: formData,
+        };
+      }
+
+      // ---------- API CALL ----------
+      const response = await fetch(url, options);
 
       if (response.ok) {
         const updatedData = await response.json();
@@ -345,6 +388,7 @@ const handlePermissionChange = (key) => {
             tabtype.charAt(0).toUpperCase() + tabtype.slice(1)
           } updated successfully.`,
         });
+
         if (onUserUpdated) onUserUpdated(updatedData);
         setShow(false);
       } else {
@@ -556,9 +600,10 @@ const handlePermissionChange = (key) => {
               <Badge color="light-primary" className="rounded p-75">
                 <Check className="font-medium-2" />
               </Badge>
+
               <div className="ms-75">
-                <h4 className="mb-0">1.23k</h4>
-                <small>Tasks Done</small>
+                <h4 className="mb-0">{selectedUser.completed_tasks}</h4>
+                <small>Completed Tasks</small>
               </div>
             </div>
             <div className="d-flex align-items-start">
@@ -566,8 +611,8 @@ const handlePermissionChange = (key) => {
                 <Briefcase className="font-medium-2" />
               </Badge>
               <div className="ms-75">
-                <h4 className="mb-0">568</h4>
-                <small>Projects Done</small>
+                <h4 className="mb-0">{selectedUser.total_tasks}</h4>
+                <small>Total Tasks</small>
               </div>
             </div>
           </div>
@@ -870,42 +915,101 @@ const handlePermissionChange = (key) => {
                     />
                   </Col>
                   <div className="d-flex flex-column ms-1">
-        <div className="form-check mb-50">
-          <Input
-            type="checkbox"
-            id="is_report"
-            checked={permissions.is_report}
-            onChange={() => handlePermissionChange("is_report")}
-          />
-          <Label for="is_report" className="form-check-label ms-1">
-            Can Access Reports
-          </Label>
-        </div>
+                    <div className="form-check mb-50">
+                      <Input
+                        type="checkbox"
+                        id="is_report"
+                        checked={permissions.is_report}
+                        onChange={() => handlePermissionChange("is_report")}
+                      />
+                      <Label for="is_report" className="form-check-label ms-1">
+                        Can Access Reports
+                      </Label>
+                    </div>
 
-        <div className="form-check mb-50">
-          <Input
-            type="checkbox"
-            id="is_task_recive"
-            checked={permissions.is_task_recive}
-            onChange={() => handlePermissionChange("is_task_recive")}
-          />
-          <Label for="is_task_recive" className="form-check-label ms-1">
-            Can Receive Tasks
-          </Label>
-        </div>
+                    <div className="form-check mb-50">
+                      <Input
+                        type="checkbox"
+                        id="is_task_recive"
+                        checked={permissions.is_task_recive}
+                        onChange={() =>
+                          handlePermissionChange("is_task_recive")
+                        }
+                      />
+                      <Label
+                        for="is_task_recive"
+                        className="form-check-label ms-1"
+                      >
+                        Can Receive Tasks
+                      </Label>
+                    </div>
 
-        <div className="form-check">
-          <Input
-            type="checkbox"
-            id="is_task_create"
-            checked={permissions.is_task_create}
-            onChange={() => handlePermissionChange("is_task_create")}
-          />
-          <Label for="is_task_create" className="form-check-label ms-1">
-            Can Create Tasks
-          </Label>
-        </div>
-      </div>
+                    <div className="form-check">
+                      <Input
+                        type="checkbox"
+                        id="is_task_create"
+                        checked={permissions.is_task_create}
+                        onChange={() =>
+                          handlePermissionChange("is_task_create")
+                        }
+                      />
+                      <Label
+                        for="is_task_create"
+                        className="form-check-label ms-1"
+                      >
+                        Can Create Tasks
+                      </Label>
+                    </div>
+                  </div>
+                  <Col md={12} xs={12} className="mb-2">
+                    <Label className="form-label" for="image">
+                      Profile Image
+                    </Label>
+
+                    {/* Image Preview */}
+                    <div className="mb-1">
+                      <img
+                        src={
+                          imagePreview ||
+                          (selectedUser?.image
+                            ? selectedUser.image
+                            : selectedUser.image)
+                        }
+                        alt="Profile"
+                        style={{
+                          width: "110px",
+                          height: "110px",
+                          borderRadius: "10px",
+                          objectFit: "cover",
+                          border: "1px solid #ccc",
+                        }}
+                      />
+                    </div>
+
+                    {/* File Input */}
+                    <Controller
+                      name="image"
+                      control={control}
+                      defaultValue={null}
+                      render={({ field }) => (
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          id="image"
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            field.onChange(file);
+
+                            // Preview
+                            if (file) {
+                              setImageFile(file);
+                              setImagePreview(URL.createObjectURL(file));
+                            }
+                          }}
+                        />
+                      )}
+                    />
+                  </Col>
 
                   {/* <Col md={6} xs={12}>
                 <Label className='form-label' for='status'>
