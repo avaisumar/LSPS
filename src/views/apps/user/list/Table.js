@@ -212,11 +212,26 @@ const CustomHeader = ({
  function downloadCSV(array) {
   if (!array || array.length === 0) return;
 
-  const headers = Object.keys(array[0]).map((h) => h.toUpperCase());
+  // Flatten the data
+  const flatArray = array.map((obj) => {
+    const flat = { ...obj };
+
+    if (flat.assigned_to && typeof flat.assigned_to === "object") {
+      flat.assigned_to = flat.assigned_to.name;
+    }
+
+    if (flat.created_by && typeof flat.created_by === "object") {
+      flat.created_by = flat.created_by.name;
+    }
+
+    return flat;
+  });
+
+  const headers = Object.keys(flatArray[0]).map((h) => h.toUpperCase());
 
   const csvContent = [
-    headers.join(","), // UPPERCASE HEADERS
-    ...array.map((obj) => Object.values(obj).join(",")),
+    headers.join(","),
+    ...flatArray.map((obj) => Object.values(obj).join(",")),
   ].join("\n");
 
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -224,16 +239,29 @@ const CustomHeader = ({
 }
 
 
+
   // ✅ Export to Excel
-  function downloadExcel(array) {
+ function downloadExcel(array) {
   if (!array || array.length === 0) return;
 
-  // Convert keys to UPPERCASE for Excel
   const newArray = array.map((obj) => {
     const transformed = {};
+
     Object.keys(obj).forEach((key) => {
-      transformed[key.toUpperCase()] = obj[key];
+      let value = obj[key];
+
+      // Replace nested object with name
+      if (key === "assigned_to" && value && typeof value === "object") {
+        value = value.name;
+      }
+
+      if (key === "created_by" && value && typeof value === "object") {
+        value = value.name;
+      }
+
+      transformed[key.toUpperCase()] = value;
     });
+
     return transformed;
   });
 
@@ -243,6 +271,7 @@ const CustomHeader = ({
 
   XLSX.writeFile(workbook, "export.xlsx");
 }
+
 
 
   // ✅ Export to PDF
