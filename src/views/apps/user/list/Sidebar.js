@@ -200,9 +200,10 @@ const SidebarNewUsers = ({ open, toggleSidebar, tabtype }) => {
         formData.append("lastname", data.lastname);
         formData.append("designation", role);
         formData.append("reporting_manager", data.reporting_manager || "");
-        formData.append("is_report", permissions.is_report);
-        formData.append("is_task_recive", permissions.is_task_recive);
-        formData.append("is_task_create", permissions.is_task_create);
+        formData.append("is_report", permissions.is_report ? "true" : "false");
+formData.append("is_task_recive", permissions.is_task_recive ? "true" : "false");
+formData.append("is_task_create", permissions.is_task_create ? "true" : "false");
+
 
         // ✅ Add image if selected
         if (imageFile) {

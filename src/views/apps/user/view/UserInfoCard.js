@@ -76,7 +76,8 @@ const MySwal = withReactContent(Swal);
 
 const UserInfoCard = ({ selectedUser, onUserUpdated }) => {
   console.log("selected", selectedUser);
-  const userdata = useSelector((state) => state.auth.userData);
+    const allData = useSelector((state) => state.users.allData);
+
   const BASE_URL = "https://lspschoolerp.pythonanywhere.com";
   const [imagePreview, setImagePreview] = useState(null);
   const [imageFile, setImageFile] = useState(null);
@@ -103,12 +104,10 @@ const UserInfoCard = ({ selectedUser, onUserUpdated }) => {
     }
     return flat;
   };
+  console.log("allDAta",allData)
   useEffect(() => {
-    if (userdata?.team) {
-      const teamList = flattenTeam(userdata.team);
-      setUsers(teamList);
-    }
-  }, [userdata]);
+    setUsers(allData);
+  }, []);
   useEffect(() => {
     if (tabtype === "task" && selectedUser?.id) {
       axios
