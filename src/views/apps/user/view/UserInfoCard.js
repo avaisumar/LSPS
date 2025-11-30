@@ -360,6 +360,8 @@ const UserInfoCard = ({ selectedUser, onUserUpdated }) => {
         formData.append("is_report", permissions.is_report);
         formData.append("is_task_recive", permissions.is_task_recive);
         formData.append("is_task_create", permissions.is_task_create);
+        formData.append("is_active", true);
+
 
         // Add image if user selected one
         if (imageFile) {

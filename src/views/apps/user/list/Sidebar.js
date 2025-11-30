@@ -159,7 +159,10 @@ const SidebarNewUsers = ({ open, toggleSidebar, tabtype }) => {
   };
   useEffect(() => {
     const flatTeam = flattenTeam(teamList || []);
-    setTeamMembers(flatTeam);
+    console.log("@@@@@@@@@@@@@@@@@@@",flatTeam)
+    const filteredTeam = flatTeam.filter((user) => user.is_task_recive === true);
+    console.log("!!!!!!!!!!!!!!!!!",filteredTeam)
+    setTeamMembers(filteredTeam);
   }, [teamList]);
 
   // ✅ Clear error message when user changes any field
@@ -248,7 +251,7 @@ formData.append("is_task_create", permissions.is_task_create ? "true" : "false")
         console.log("Task created:", res.data);
         setToastMessage("Task created successfully!");
         setToastOpen(true);
-        dispatch(getAllData({ endpoint: "task/" }));
+        //dispatch(getAllData({ endpoint: "task/" }));
         toggleSidebar();
       }
     } catch (err) {

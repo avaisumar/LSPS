@@ -523,7 +523,7 @@ const UsersList = () => {
     endpoint = "task/";
 
     const userId = userdata?.id;
-    queryParams.perm = true; // ✅ Always include permission flag
+     // ✅ Always include permission flag
 
     // ✅ For report tab — assigned tasks to current user
     if (tabtype === "report" && userId) {
