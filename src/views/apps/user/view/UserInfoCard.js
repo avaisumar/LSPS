@@ -76,7 +76,9 @@ const MySwal = withReactContent(Swal);
 
 const UserInfoCard = ({ selectedUser, onUserUpdated }) => {
   console.log("selected", selectedUser);
-    const allData = useSelector((state) => state.users.allData);
+  const userdata = JSON.parse(localStorage.getItem("userData"));
+
+  const allData = useSelector((state) => state.users.allData);
 
   const BASE_URL = "https://lspschoolerp.pythonanywhere.com";
   const [imagePreview, setImagePreview] = useState(null);
@@ -104,7 +106,7 @@ const UserInfoCard = ({ selectedUser, onUserUpdated }) => {
     }
     return flat;
   };
-  console.log("allDAta",allData)
+  console.log("allDAta", allData);
   useEffect(() => {
     setUsers(allData);
   }, []);
@@ -362,7 +364,6 @@ const UserInfoCard = ({ selectedUser, onUserUpdated }) => {
         formData.append("is_task_create", permissions.is_task_create);
         formData.append("is_active", true);
 
-
         // Add image if user selected one
         if (imageFile) {
           formData.append("image", imageFile); // <-- actual file
@@ -574,49 +575,54 @@ const UserInfoCard = ({ selectedUser, onUserUpdated }) => {
     <Fragment>
       <Card>
         <CardBody>
-          <div className="user-avatar-section">
-            <div className="d-flex align-items-center flex-column">
-              {renderUserImg()}
-              <div className="d-flex flex-column align-items-center text-center">
-                <div className="user-info">
-                  <h4>
-                    {selectedUser !== null
-                      ? selectedUser.fullName
-                      : "Eleanor Aguilar"}
-                  </h4>
-                  {selectedUser !== null ? (
-                    <Badge
-                      color={roleColors[selectedUser.role]}
-                      className="text-capitalize"
-                    >
-                      {selectedUser.role}
-                    </Badge>
-                  ) : null}
+          {tabtype === "user" && (
+            <div className="user-avatar-section">
+              <div className="d-flex align-items-center flex-column">
+                {renderUserImg()}
+                <div className="d-flex flex-column align-items-center text-center">
+                  <div className="user-info">
+                    <h4>
+                      {selectedUser !== null
+                        ? selectedUser.fullName
+                        : "Eleanor Aguilar"}
+                    </h4>
+                    {selectedUser !== null ? (
+                      <Badge
+                        color={roleColors[selectedUser.role]}
+                        className="text-capitalize"
+                      >
+                        {selectedUser.role}
+                      </Badge>
+                    ) : null}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-          <div className="d-flex justify-content-around my-2 pt-75">
-            <div className="d-flex align-items-start me-2">
-              <Badge color="light-primary" className="rounded p-75">
-                <Check className="font-medium-2" />
-              </Badge>
+          )}
 
-              <div className="ms-75">
-                <h4 className="mb-0">{selectedUser.completed_tasks}</h4>
-                <small>Completed Tasks</small>
+          {tabtype === "user" && (
+            <div className="d-flex justify-content-around my-2 pt-75">
+              <div className="d-flex align-items-start me-2">
+                <Badge color="light-primary" className="rounded p-75">
+                  <Check className="font-medium-2" />
+                </Badge>
+
+                <div className="ms-75">
+                  <h4 className="mb-0">{selectedUser.completed_tasks}</h4>
+                  <small>Completed Tasks</small>
+                </div>
+              </div>
+              <div className="d-flex align-items-start">
+                <Badge color="light-primary" className="rounded p-75">
+                  <Briefcase className="font-medium-2" />
+                </Badge>
+                <div className="ms-75">
+                  <h4 className="mb-0">{selectedUser.total_tasks}</h4>
+                  <small>Total Tasks</small>
+                </div>
               </div>
             </div>
-            <div className="d-flex align-items-start">
-              <Badge color="light-primary" className="rounded p-75">
-                <Briefcase className="font-medium-2" />
-              </Badge>
-              <div className="ms-75">
-                <h4 className="mb-0">{selectedUser.total_tasks}</h4>
-                <small>Total Tasks</small>
-              </div>
-            </div>
-          </div>
+          )}
           <h4 className="fw-bolder border-bottom pb-50 mb-1">Details</h4>
           <div className="info-container">
             {selectedUser !== null ? (
@@ -1090,116 +1096,129 @@ const UserInfoCard = ({ selectedUser, onUserUpdated }) => {
               </Col> */}
                 </>
               )}
+              {console.log("userdata",userdata,"selectedUser",selectedUser?.created_by?.id)}
               {tabtype === "task" && (
                 <>
-                  <Col md={6}>
-                    <Label for="title">Task Title</Label>
-                    <Controller
-                      name="title"
-                      control={control}
-                      render={({ field }) => (
-                        <Input
-                          {...field}
-                          placeholder="Enter title"
-                          invalid={errors.title && true}
+                  {userdata?.id === selectedUser?.created_by?.id ? (
+                    <>
+                      {/* FULL EDIT FIELDS */}
+                      <Col md={6}>
+                        <Label for="title">Task Title</Label>
+                        <Controller
+                          name="title"
+                          control={control}
+                          render={({ field }) => (
+                            <Input
+                              {...field}
+                              placeholder="Enter title"
+                              invalid={errors.title && true}
+                            />
+                          )}
                         />
-                      )}
-                    />
-                  </Col>
-                  {/* <Col md={6}>
-                    <Label for="assigned_to">Assign To</Label>
-                    <Controller name="assigned_to" control={control}
-                      render={({ field }) => (
-                        <Input type="select" {...field}>
-                          <option value="">Select User</option>
-                          {users.map((u) => (
-                            <option key={u.id} value={u.id}>{u.email}</option>
-                          ))}
-                        </Input>
-                      )}
-                    />
-                  </Col> */}
-                  <Col md={12}>
-                    <Label for="description">Description</Label>
-                    <Controller
-                      name="description"
-                      control={control}
-                      render={({ field }) => (
-                        <Input
-                          {...field}
-                          style={{
-                            maxHeight: "100px",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                            cursor: "pointer",
-                          }}
-                          title={field.value}
-                          type="textarea"
-                          placeholder="Task description"
+                      </Col>
+
+                      <Col md={12}>
+                        <Label for="description">Description</Label>
+                        <Controller
+                          name="description"
+                          control={control}
+                          render={({ field }) => (
+                            <Input
+                              {...field}
+                              type="textarea"
+                              placeholder="Task description"
+                              style={{
+                                maxHeight: "100px",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                                cursor: "pointer",
+                              }}
+                            />
+                          )}
                         />
-                      )}
-                    />
-                  </Col>
-                  <Col md={6}>
-                    <Label for="status">Status</Label>
-                    <Controller
-                      name="status"
-                      control={control}
-                      render={({ field }) => (
-                        <Input type="select" {...field}>
-                          <option value="pending">Pending</option>
-                          <option value="in_progress">In Progress</option>
-                          <option value="completed">Completed</option>
-                        </Input>
-                      )}
-                    />
-                  </Col>
-                  <Col md={6}>
-                    <Label for="assigned_to">Assign To</Label>
-                    <Controller
-                      name="assigned_to"
-                      control={control}
-                      render={({ field }) => (
-                        <Input type="select" {...field}>
-                          <option value="">Select User</option>
-                          {users.map((u) => (
-                            <option key={u.id} value={u.id}>
-                              {u.email || u.name}
-                            </option>
-                          ))}
-                        </Input>
-                      )}
-                    />
-                  </Col>
+                      </Col>
 
-                  {/* Priority */}
-                  <Col md={4}>
-                    <Label for="priority">Priority</Label>
-                    <Controller
-                      name="priority"
-                      control={control}
-                      render={({ field }) => (
-                        <Input type="select" {...field}>
-                          <option value="">Select Priority</option>
-                          <option value="urgent">Urgent</option>
-                          <option value="high">High</option>
-                          <option value="medium">Medium</option>
-                          <option value="low">Low</option>
-                        </Input>
-                      )}
-                    />
-                  </Col>
+                      <Col md={6}>
+                        <Label for="status">Status</Label>
+                        <Controller
+                          name="status"
+                          control={control}
+                          render={({ field }) => (
+                            <Input type="select" {...field}>
+                              <option value="pending">Pending</option>
+                              <option value="in_progress">In Progress</option>
+                              <option value="completed">Completed</option>
+                            </Input>
+                          )}
+                        />
+                      </Col>
 
-                  {/* Due Date */}
-                  <Col md={4}>
-                    <Label for="due_date">Due Date</Label>
-                    <Controller
-                      name="due_date"
-                      control={control}
-                      render={({ field }) => <Input type="date" {...field} />}
-                    />
-                  </Col>
+                      <Col md={6}>
+                        <Label for="assigned_to">Assign To</Label>
+                        <Controller
+                          name="assigned_to"
+                          control={control}
+                          render={({ field }) => (
+                            <Input type="select" {...field}>
+                              <option value="">Select User</option>
+                              {users.map((u) => (
+                                <option key={u.id} value={u.id}>
+                                  {u.email || u.name}
+                                </option>
+                              ))}
+                            </Input>
+                          )}
+                        />
+                      </Col>
+
+                      <Col md={4}>
+                        <Label for="priority">Priority</Label>
+                        <Controller
+                          name="priority"
+                          control={control}
+                          render={({ field }) => (
+                            <Input type="select" {...field}>
+                              <option value="">Select Priority</option>
+                              <option value="urgent">Urgent</option>
+                              <option value="high">High</option>
+                              <option value="medium">Medium</option>
+                              <option value="low">Low</option>
+                            </Input>
+                          )}
+                        />
+                      </Col>
+
+                      <Col md={4}>
+                        <Label for="due_date">Due Date</Label>
+                        <Controller
+                          name="due_date"
+                          control={control}
+                          render={({ field }) => (
+                            <Input type="date" {...field} />
+                          )}
+                        />
+                      </Col>
+                    </>
+                  ) : (
+                    <>
+                      {/* ONLY STATUS FIELD */}
+                      <Col md={6}>
+                        <Label for="status">Status</Label>
+                        <Controller
+                          name="status"
+                          control={control}
+                          render={({ field }) => (
+                            <Input type="select" {...field}>
+                              <option value="pending">Pending</option>
+                              <option value="in_progress">In Progress</option>
+                              <option value="completed">Completed</option>
+                            </Input>
+                          )}
+                        />
+                      </Col>
+                    </>
+                  )}
                 </>
               )}
               <Col xs={12} className="text-center mt-2 pt-50">
